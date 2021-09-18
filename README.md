@@ -1,2 +1,9 @@
 # veryuninfishedserver-plugins-and-cmds
 plugins and commands for the very unfinished server
+
+## CmdDecide.cs
+Command for deciding on things, originally came from The Build, but this version has different wording.
+## Greentext.cs
+Plugin to make text green if the message starts with >.
+## writefont.cs
+Edited version of NA2's writefont to use the block you are holding instead of wool.
