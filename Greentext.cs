@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Supernova;
 using Supernova.Events.PlayerEvents;
+using Supernova.Modules.Relay.Discord;
 
 namespace Core {
  	public class Greentext : Plugin {
@@ -19,9 +20,9 @@ namespace Core {
 		static void InterceptChat(Player p, string message) {
 		    if (message.StartsWith(">")) 
 		    {
-			Chat.MessageChat(p, "λFULL: &a" + message);
-			p.cancelchat = true;
+				Chat.MessageChat(p, "λFULL: &a" + message, null, true);
+				p.cancelchat = true;
 		    }
 		}
-        }
+    }
 }
