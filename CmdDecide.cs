@@ -20,7 +20,6 @@ namespace Supernova
 {
 	public class CmdDecide : Command
 	{
-		System.Timers.Timer extraTimer = new System.Timers.Timer(2000);
 		// The command's name (what you put after a slash to use this command)
 		public override string name { get { return "Decide"; } }
 
@@ -43,29 +42,35 @@ namespace Supernova
 		//   message is the arguments given to the command. (e.g. for '/update this', message is "this")
 		public override void Use(Player p, string message)
 		{
+			System.Timers.Timer extraTimer = new System.Timers.Timer(2000);
 			Random random = new Random();
 			string msg = "The magic ball is deciding for " + p.ColoredName + " %Sbetween &f";
 			int i = 0;
 		    var choices = string.Join(" ", message).Split(',');
 		    while (i < choices.Length) 
 		    {
-		    	msg += choices[i];
+		    	if (choices[i][0] == ' ') { msg += choices[i].Substring(1, choices[i].Length - 1); }
+				else {msg += choices[i]; }
 		    	if (i == choices.Length - 2) 
 		    	{
-		    		msg += " and ";
-		    	} 
+		    		msg += " %Sand &f";
+		    	}
+				else if (i  == choices.Length - 1) 
+				{
+					msg += "%S.";
+				}
 		    	else
 		    	{
-		    		msg += ", ";
+		    		msg += "%S, &f";
 		    	}
 		    	i++;
 		    }
 		    //await ctx.RespondAsync();
-		    Chat.Message(ChatScope.Global, msg.Substring(0, msg.Length - 2), null, Filter8Ball);
+		    Chat.Message(ChatScope.Global, msg, null, Filter8Ball);
 			extraTimer.Start();
 			extraTimer.Elapsed += delegate {
 				extraTimer.Stop();
-				Chat.Message(ChatScope.Global, "The magic ball has decided for " + p.ColoredName + ", choosing " + choices[random.Next(0, choices.Length)], null, Filter8Ball);
+				Chat.Message(ChatScope.Global, "The magic ball has decided for " + p.ColoredName + ", choosing &f" + choices[random.Next(0, choices.Length)], null, Filter8Ball);
 			};
 		}
 
