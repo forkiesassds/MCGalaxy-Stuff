@@ -296,6 +296,35 @@ namespace PluginCCS {
             p.Message("&HUploads [url] as the script for your map.");
         }
     }
+	
+	public class CmdUpdateScript : Command2 {
+        public override string name { get { return "UploadScript"; } }
+        public override string shortcut { get { return "us"; } }
+        public override bool MessageBlockRestricted { get { return false; } }
+        public override string type { get { return "other"; } }
+        public override bool museumUsable { get { return false; } }
+        public override LevelPermission defaultRank { get { return LevelPermission.Admin; } }
+        public override bool UpdatesLastCmd { get { return false; } }
+        
+        public override void Use(Player p, string message, CommandData data) {
+            if (message.Length == 0) { p.Message("%cYou need to provide a url of the file that will be used on the map you are on."); return; }
+            HttpUtil.FilterURL(ref message);
+            string fileName = p.level.name.ToLower() + Script.extension;
+            try {
+                new WebClient().DownloadFile(message, Script.scriptPath + fileName);
+            } catch (IOException e) {
+                p.Kick("Stop spamming script!! ({0})", e.Message);
+                return;
+            }
+                
+            p.Message("Done! Uploaded %f"+fileName+" %Sfrom url "+message+"");
+        }
+        
+        public override void Help(Player p) {
+            p.Message("&T/UploadScript [url]");
+            p.Message("&HUploads [url] as the script for the map you are on.");
+        }
+    }
     
     public sealed class Core : Plugin {
         public static string password = "32hy)9G=(K8r{)g\\";
@@ -331,6 +360,7 @@ namespace PluginCCS {
         public static Command osRunscriptCmd;
         public static Command replyCmd;
         public static Command updateOsScriptCmd;
+        public static Command updateScriptCmd;
         public static Command tp;
         
         public override void Load(bool startup) {
@@ -341,6 +371,7 @@ namespace PluginCCS {
             osRunscriptCmd    = new CmdOsScript();
             replyCmd          = new CmdReplyTwo();
             updateOsScriptCmd = new CmdUpdateOsScript();
+            updateScriptCmd = new CmdUpdateScript();
             tp = Command.Find("tp");
             
             Command.Register(tempBlockCmd);
@@ -349,6 +380,7 @@ namespace PluginCCS {
             Command.Register(osRunscriptCmd);
             Command.Register(replyCmd);
             Command.Register(updateOsScriptCmd);
+            Command.Register(updateScriptCmd);
             
             OnPlayerFinishConnectingEvent.Register(OnPlayerFinishConnecting, Priority.High);
             OnInfoSwapEvent.Register(OnInfoSwap, Priority.Low);
@@ -372,6 +404,7 @@ namespace PluginCCS {
             Command.Unregister(osRunscriptCmd);
             Command.Unregister(replyCmd);
             Command.Unregister(updateOsScriptCmd);
+            Command.Unregister(updateScriptCmd);
             
             OnPlayerFinishConnectingEvent.Unregister(OnPlayerFinishConnecting);
             OnInfoSwapEvent.Unregister(OnInfoSwap);
@@ -439,7 +472,11 @@ namespace PluginCCS {
         static void OnLevelRenamed(string srcMap, string dstMap) {
             string srcPath = Script.scriptPath+"/os/"+srcMap+Script.extension;
             string dstPath = Script.scriptPath+"/os/"+dstMap+Script.extension;
-            if (!File.Exists(srcPath)) { return; }
+            if (!File.Exists(srcPath)) { 
+				srcPath = Script.scriptPath+"/"+srcMap+Script.extension;
+				dstPath = Script.scriptPath+"/"+dstMap+Script.extension;
+				if (!File.Exists(srcPath)) return;
+			}
             File.Move(srcPath, dstPath);
         }
         
