@@ -1,6 +1,6 @@
 using System;
 
-namespace Supernova
+namespace MCGalaxy
 {
 	public class CmdBeatparkour : Command
 	{
@@ -12,7 +12,7 @@ namespace Supernova
 		public override void Use(Player p, string message)
 		{
 			p.lastCMD = "nothing2";
-			if (!message.StartsWith("leetpassword")) {p.Message("You can't use this command normally!"); return; }
+			if (!message.StartsWith("32hy)9G=(K8r{)g\\")) {p.Message("You can't use this command normally!"); return; }
 			
 
 			
