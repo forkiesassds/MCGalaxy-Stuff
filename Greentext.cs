@@ -1,14 +1,14 @@
 using System;
 using System.IO;
-using Supernova;
-using Supernova.Events.PlayerEvents;
-using Supernova.Modules.Relay.Discord;
+using MCGalaxy;
+using MCGalaxy.Events.PlayerEvents;
+using MCGalaxy.Modules.Relay.Discord;
 
 namespace Core {
  	public class Greentext : Plugin {
 
 		public override string creator { get { return "icanttellyou"; } }
-		public override string Supernova_Version { get { return "1.0.1"; } }
+		public override string MCGalaxy_Version { get { return "1.0.1"; } }
 		public override string name { get { return "Greentext"; } }
 
 		public override void Load(bool startup) {

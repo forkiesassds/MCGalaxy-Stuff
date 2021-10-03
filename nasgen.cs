@@ -1,20 +1,20 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
-using Supernova.Commands;
-using Supernova.Tasks;
+using MCGalaxy.Commands;
+using MCGalaxy.Tasks;
 
 using LibNoise;
-using Supernova;
+using MCGalaxy;
 using BlockID = System.UInt16;
-using Supernova.Generator;
-using Supernova.Generator.Foliage;
+using MCGalaxy.Generator;
+using MCGalaxy.Generator.Foliage;
 
-namespace Supernova {
+namespace MCGalaxy {
 	
 	public sealed class PluginNasGen : Plugin {
 		public override string name { get { return "PluginNasGen"; } }
-		public override string Supernova_Version { get { return "1.0.1"; } }
+		public override string MCGalaxy_Version { get { return "1.0.1"; } }
 		public override string creator { get { return "Goodly"; } }
 
 

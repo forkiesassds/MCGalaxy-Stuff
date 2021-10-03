@@ -9,13 +9,13 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Net;
-using Supernova;
-using Supernova.Maths;
-using Supernova.Events.PlayerEvents;
-using Supernova.Events.LevelEvents;
-using Supernova.Events.PlayerDBEvents;
-using Supernova.Commands;
-using Supernova.Network;
+using MCGalaxy;
+using MCGalaxy.Maths;
+using MCGalaxy.Events.PlayerEvents;
+using MCGalaxy.Events.LevelEvents;
+using MCGalaxy.Events.PlayerDBEvents;
+using MCGalaxy.Commands;
+using MCGalaxy.Network;
 using BlockID = System.UInt16;
 using ScriptAction = System.Action;
 
@@ -332,7 +332,7 @@ namespace PluginCCS {
         public static string runArgSpaceSubstitute = "_";
         public override string creator { get { return ""; } }
         public override string name { get { return "ccs"; } }
-        public override string Supernova_Version { get { return "1.0.1"; } }
+        public override string MCGalaxy_Version { get { return "1.0.1"; } }
         
         private static Dictionary<string, ScriptData> scriptDataAtPlayer = new Dictionary<string, ScriptData>();
         public static ScriptData GetScriptData(Player p) {
@@ -1508,7 +1508,7 @@ namespace PluginCCS {
         public void Kill() {
             p.HandleDeath(Block.Cobblestone, args, false, true);
         }
-        //Can't name it Command otherwise it's ambiguous between Script.Command and Supernova.Command
+        //Can't name it Command otherwise it's ambiguous between Script.Command and MCGalaxy.Command
         public void Cmd() {
             Command cmd = null;
             if (!ValidateCommand(ref cmdName, ref cmdArgs, out cmd)) {

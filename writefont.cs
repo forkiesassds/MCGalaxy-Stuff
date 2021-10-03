@@ -2,19 +2,19 @@
 using System;
 using System.Drawing;
 using System.IO;
-using Supernova.Drawing;
-using Supernova.Drawing.Brushes;
-using Supernova.Drawing.Ops;
-using Supernova.Maths;
+using MCGalaxy.Drawing;
+using MCGalaxy.Drawing.Brushes;
+using MCGalaxy.Drawing.Ops;
+using MCGalaxy.Maths;
 using BlockID = System.UInt16;
-using Supernova.Commands;
+using MCGalaxy.Commands;
 
-namespace Supernova.Commands.Building {
+namespace MCGalaxy.Commands.Building {
 	public sealed class WriteFontPlugin : Plugin {
 		public override string name { get { return "WriteFontPlugin"; } }
 		public override string creator { get { return ""; } }
 		public override string welcome { get { return ""; } }
-		public override string Supernova_Version { get { return "1.0.1"; } }
+		public override string MCGalaxy_Version { get { return "1.0.1"; } }
 		
 		public override void Load(bool startup) {
 			Command.Register(new CmdWriteFont());
@@ -34,7 +34,7 @@ namespace Supernova.Commands.Building {
 		protected override string SelectionType { get { return "direction"; } }
 		protected override string PlaceMessage { get { return "Place or break two blocks to determine direction."; } }
 		
-		// TODO: Absolutely filthy copy paste! Fix in Supernova
+		// TODO: Absolutely filthy copy paste! Fix in MCGalaxy
 		BrushFactory MakeBrush(DrawArgs args) {
 			args.BrushName = args.Player.BrushName;
 			args.BrushArgs = "";
@@ -143,7 +143,7 @@ namespace Supernova.Commands.Building {
 		}
 		
 		Vec3S32 dir, pos;
-		public override void Perform(Vec3S32[] marks, Supernova.Drawing.Brushes.Brush brush, DrawOpOutput output) {
+		public override void Perform(Vec3S32[] marks, MCGalaxy.Drawing.Brushes.Brush brush, DrawOpOutput output) {
 			Vec3S32 p1 = marks[0], p2 = marks[1];
 			if (Math.Abs(p2.X - p1.X) > Math.Abs(p2.Z - p1.Z)) {
 				dir.X = p2.X > p1.X ? 1 : -1;
@@ -178,7 +178,7 @@ namespace Supernova.Commands.Building {
 			return 0;
 		}
 		
-		void DrawLetter(Player p, char c, PixelGetter src, Supernova.Drawing.Brushes.Brush brush, DrawOpOutput output) {
+		void DrawLetter(Player p, char c, PixelGetter src, MCGalaxy.Drawing.Brushes.Brush brush, DrawOpOutput output) {
 			int Y = (int)(c >> 4)   * 8;
 			int X = (int)(c & 0x0F) * 8;
 			int width = GetTileWidth(src, X, Y);
