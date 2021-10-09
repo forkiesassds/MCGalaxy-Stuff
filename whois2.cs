@@ -61,11 +61,12 @@ namespace MCGalaxy.Commands.Info
                 PlayerData target = PlayerDB.Match(p, args[0]);
                 if (target == null) return;
 				Group group = Group.GroupIn(target.Name);
-				p.Message("&m-[ &f{0}&m(offline) ]-", (string)target.Name.Replace('+', ' '));
+				// Offline stats
+				p.Message("&9-[ &f{0}&9(offline) ]-", (string)target.Name.Replace('+', ' '));
 				p.Message("&f· &bHas &6{0} &b{1}", target.Money.ToString(), Server.Config.Currency);
-				p.Message("&f· &bHas the rank of &g{0}", group.Name);
+				p.Message("&f· &bHas the rank of &3{0}", group.Name);
 				p.Message("&f· &bHas logged in &a{0} &btimes", target.Logins);
-				p.Message("&f· &bFirst login: &]{0}", target.FirstLogin.ToString("yyyy-MM-dd"));
+				p.Message("&f· &bFirst login: &5{0}", target.FirstLogin.ToString("yyyy-MM-dd"));
 				p.Message("&f· &bHas spent &d{0} &bon the server", target.TotalTime.ToString().Replace(".", "d ").Replace(":", "h ").TrimEnd('h', ' ', '1', '2', '3', '4', '5', '6', '7', '8', '9') + "m");
 				
 				
@@ -73,10 +74,10 @@ namespace MCGalaxy.Commands.Info
 			else {
 				
 				
-				
-				p.Message("&m-[ {0} &m(&7{1}&m) ]-", who.ColoredName, who.name);
+				// Online stats
+				p.Message("&9-[ {0} &9(&7{1}&9) ]-", who.ColoredName, who.name);
 				p.Message("&f· &bHas &6{0} &b{1}", who.money, Server.Config.Currency);
-				p.Message("&f· &bHas the rank of &g{0}", who.Rank);
+				p.Message("&f· &bHas the rank of &3{0}", who.Rank);
 				
 				p.Message("&f· &bHas logged in &a{0} &btimes", who.TimesVisited);
 				
@@ -86,7 +87,6 @@ namespace MCGalaxy.Commands.Info
 				p.Message("&f· &bFirst login: &]{0}", who.FirstLogin.ToString("yyyy-MM-dd"));
 				
 				p.Message("&f· &bHas spent &d{0} &bon the server, &d{1} &bthis session", who.TotalTime.Shorten(), timeOnline.Shorten());
-				//p.Message("&f· &b");
 				
 				
 				
@@ -97,8 +97,8 @@ namespace MCGalaxy.Commands.Info
 				
 				bool hasSkin = !who.SkinName.CaselessEq(who.truename);
 				bool hasModel = !(who.Model.CaselessEq("humanoid") || who.Model.CaselessEq("human"));
-				if (hasSkin) { p.Message("&f· &bHas the skin of &q{0}", who.SkinName); }
-				if (hasModel) { p.Message("&f· &bHas the model of &q{0}", who.Model); }
+				if (hasSkin) { p.Message("&f· &bHas the skin of &6{0}", who.SkinName); }
+				if (hasModel) { p.Message("&f· &bHas the model of &6{0}", who.Model); }
 				
 			
 			}
