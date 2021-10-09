@@ -13,3 +13,5 @@ Edited version of NAS, a scripting tool used on NA2 to not require Cmdhelpers.dl
 Edited version of NasGen, made for the ClassicalNuts server.
 ## whois2.cs
 Alternate info command.
+## hotbarcompass.cs
+Makes a compass in your hotbar! Install instructions are in the file.
