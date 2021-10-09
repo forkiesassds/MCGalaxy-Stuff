@@ -15,3 +15,5 @@ Edited version of NasGen, made for the ClassicalNuts server.
 Alternate info command.
 ## hotbarcompass.cs
 Makes a compass in your hotbar! Install instructions are in the file.
+## CmdSlap2.cs
+Edited version of /Slap so you can slap OPs.
