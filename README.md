@@ -11,3 +11,5 @@ Edited version of NA2's writefont to use the block you are holding instead of wo
 Edited version of NAS, a scripting tool used on NA2 to not require Cmdhelpers.dll and removes item support.
 ## nasgen.cs
 Edited version of NasGen, made for the ClassicalNuts server.
+## whois2.cs
+Alternate info command.
