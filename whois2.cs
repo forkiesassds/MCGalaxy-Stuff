@@ -16,17 +16,12 @@ namespace MCGalaxy.Commands.Info
 		{
 			Command.Unregister(Command.Find("whois"));
 			Command.Register(new CmdWhois2());
-			Command.Register(new CmdWhoisLegacy());
 		}
         
 		public override void Unload(bool shutdown)
 		{
-			
-		}
-        
-		public override void Help(Player p)
-		{
-		
+			Logger.Log(LogType.Warning, "&cRestart the server to prevent problems!");
+			Command.Unregister(new CmdWhois2());
 		}
 	}
 	
@@ -35,10 +30,13 @@ namespace MCGalaxy.Commands.Info
 	public class CmdWhois2 : Command2
 	{
 		public override string name { get { return "WhoIs"; } }
-		public override string shortcut { get { return "i"; } }
+		public override string shortcut { get { return "WhoWas"; } }
 		public override string type { get { return CommandTypes.Information; } }
 		public override bool UseableWhenFrozen { get { return true; } }
-		public override LevelPermission defaultRank { get { return LevelPermission.Banned; } }
+		public override LevelPermission defaultRank { get { return LevelPermission.Guest; } }
+		public override CommandAlias[] Aliases {
+            get { return new CommandAlias[] { new CommandAlias("Info"), new CommandAlias("i") }; }
+        }
 
 		
 		public override void Use(Player p, string message, CommandData data)
@@ -52,55 +50,43 @@ namespace MCGalaxy.Commands.Info
 			
 			
 			if (args[0].Length > 0 && who == null) { 
-				bool useless = false;
-				
-				if (args.Length == 2 && args[1] == "--noplus") useless = true;
-				else args[0] = args[0] + "+";
-				
-				p.Message("Cannot find online player, searching the Database...");
+				p.Message("Cannot find online player, searching PlayerDB...");
                 PlayerData target = PlayerDB.Match(p, args[0]);
                 if (target == null) return;
-				Group group = Group.GroupIn(target.Name);
-				// Offline stats
-				p.Message("&9-[ &f{0}&9(offline) ]-", (string)target.Name.Replace('+', ' '));
-				p.Message("&f· &bHas &6{0} &b{1}", target.Money.ToString(), Server.Config.Currency);
-				p.Message("&f· &bHas the rank of &3{0}", group.Name);
-				p.Message("&f· &bHas logged in &a{0} &btimes", target.Logins);
-				p.Message("&f· &bFirst login: &5{0}", target.FirstLogin.ToString("yyyy-MM-dd"));
-				p.Message("&f· &bHas spent &d{0} &bon the server", target.TotalTime.ToString().Replace(".", "d ").Replace(":", "h ").TrimEnd('h', ' ', '1', '2', '3', '4', '5', '6', '7', '8', '9') + "m");
+				Group group   = Group.GroupIn(target.Name);
+				string color  = target.Color.Length == 0 ? group.Color : target.Color;
+				string prefix = target.Title.Length == 0 ? "" : color + "[" + target.TitleColor + target.Title + color + "] ";
 				
-				
+				string fullName = prefix + color + target.Name.RemoveLastPlus();
+				p.Message("&S-[ {0} &S({1}) &S(&coffline&S) ]-", fullName, target.Name);
+				p.Message("&f• &SHas &T{0} &S{1}", target.Money.ToString(), Server.Config.Currency);
+				p.Message("&f• &SHas the rank of {0}", group.ColoredName);
+				p.Message("&f• &SHas logged in &T{0} &Stimes", target.Logins);
+				p.Message("&f• &SFirst login: &T{0}", target.FirstLogin.ToString("yyyy-MM-dd"));
+				p.Message("&f• &SHas spent &T{0} &Son the server", target.TotalTime.Shorten());
+				if (Server.Config.OwnerName.CaselessEq(target.Name)) p.Message("&f• &SPlayer is the &cServer owner");
 			}
 			else {
-				
-				
-				// Online stats
-				p.Message("&9-[ {0} &9(&7{1}&9) ]-", who.ColoredName, who.name);
-				p.Message("&f· &bHas &6{0} &b{1}", who.money, Server.Config.Currency);
-				p.Message("&f· &bHas the rank of &3{0}", who.Rank);
-				
-				p.Message("&f· &bHas logged in &a{0} &btimes", who.TimesVisited);
-				
-				
+				Group group = Group.GroupIn(who.name);
+				string prefix = who.title.Length == 0 ? "" : group.Color + "[" + who.titlecolor + who.title + group.Color + "] ";
+				string fullName = prefix + who.ColoredName;
+				p.Message("&S-[ {0} &S({1}) ]-", fullName, who.name);
+				p.Message("&f• &SHas &T{0} &S{1}", who.money.ToString(), Server.Config.Currency);
+				p.Message("&f• &SHas the rank of {0}", group.ColoredName);
+				p.Message("&f• &SHas logged in &T{0} &Stimes", who.TimesVisited);
+				p.Message("&f• &SFirst login: &T{0}", who.FirstLogin.ToString("yyyy-MM-dd"));
 				TimeSpan timeOnline = DateTime.UtcNow - who.SessionStartTime;
-				
-				p.Message("&f· &bFirst login: &]{0}", who.FirstLogin.ToString("yyyy-MM-dd"));
-				
-				p.Message("&f· &bHas spent &d{0} &bon the server, &d{1} &bthis session", who.TotalTime.Shorten(), timeOnline.Shorten());
-				
-				
-				
+				p.Message("&f• &SHas spent &T{0} &Son the server, &T{1} &Sthis session", who.TotalTime.Shorten(), timeOnline.Shorten());
+
 				TimeSpan idleTime = DateTime.UtcNow - who.LastAction;
-				if (who.afkMessage != null) { p.Message("&f· &bIdle for {0} (AFK {1}&b)", idleTime.Shorten(), who.afkMessage); }
-				else if (idleTime.TotalMinutes >= 1) { p.Message("&f· &bIdle for {0}", idleTime.Shorten()); }
-				
+				if (who.afkMessage != null) { p.Message("&f· &SIdle for {0} (AFK {1}&b)", idleTime.Shorten(), who.afkMessage); }
+				else if (idleTime.TotalMinutes >= 1) { p.Message("&f· &SIdle for {0}", idleTime.Shorten()); }
 				
 				bool hasSkin = !who.SkinName.CaselessEq(who.truename);
 				bool hasModel = !(who.Model.CaselessEq("humanoid") || who.Model.CaselessEq("human"));
-				if (hasSkin) { p.Message("&f· &bHas the skin of &6{0}", who.SkinName); }
-				if (hasModel) { p.Message("&f· &bHas the model of &6{0}", who.Model); }
-				
-			
+				if (hasSkin) p.Message("&f• &SHas the skin of &T{0}", who.SkinName);
+				if (hasModel) p.Message("&f• &SHas the model of &T{0}", who.Model);
+				if (Server.Config.OwnerName.CaselessEq(who.name)) p.Message("&f• &SPlayer is the &cServer owner");
 			}
 		}
 
@@ -109,47 +95,7 @@ namespace MCGalaxy.Commands.Info
 		{
 			p.Message("%T/WhoIs [name]");
             p.Message("%HDisplays information about that player.");
-            p.Message("%HNote: if you don't want the plus automatically added at the end of an offline player's name, do --noplus");
+            p.Message("%HNote: Works for both online and offline players.");
 		}
 	}
-	
-	//old whois
-	public sealed class CmdWhoisLegacy : Command2 {
-        public override string name { get { return "whoislegacy"; } }
-        public override string shortcut { get { return ""; } }
-        public override string type { get { return CommandTypes.Information; } }
-        public override bool UseableWhenFrozen { get { return true; } }
-        public override CommandPerm[] ExtraPerms {
-            get { return new[] { new CommandPerm(LevelPermission.AdvBuilder, "can see player's IP and if on whitelist") }; }
-        }
-                
-        public override void Use(Player p, string message, CommandData data) {
-            if (message.Length == 0) message = p.name;
-            if (!Formatter.ValidName(p, message, "player")) return;
-            
-            int matches;
-            Player who = PlayerInfo.FindMatches(p, message, out matches);
-            if (matches > 1) return;
-            
-            if (matches == 0) {
-                p.Message("Searching database for the player..");
-                PlayerData target = PlayerDB.Match(p, message);
-                if (target == null) return;
-                
-                foreach (OfflineStatPrinter printer in OfflineStat.Stats) {
-                    printer(p, target);
-                }
-            } else {
-                foreach (OnlineStatPrinter printer in OnlineStat.Stats) {
-                    printer(p, who);
-                }
-            }
-        }
-
-        public override void Help(Player p) {
-            p.Message("%T/WhoIsLegacy [name]");
-            p.Message("%HDisplays information about that player.");
-            p.Message("%HNote: Works for both online and offline players.");
-        }
-    }
 }
