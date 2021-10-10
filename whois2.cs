@@ -67,6 +67,7 @@ namespace MCGalaxy.Commands.Info
 				p.Message("&f• &SHas modified &T{0} &Sblocks", target.TotalModified);
 				p.Message("&f• &SHas logged in &T{0} &Stimes", target.Logins);
 				p.Message("&f• &SFirst login: &T{0}", target.FirstLogin.ToString("yyyy-MM-dd"));
+				p.Message("&f• &SLast login: &T{0}", target.LastLogin.ToString("yyyy-MM-dd"));
 				p.Message("&f• &SHas spent &T{0} &Son the server", target.TotalTime.Shorten());
 				ItemPerms seeIpPerms = CommandExtraPerms.Find("WhoIs", 1);
 				if (seeIpPerms.UsableBy(p.Rank)) {
@@ -94,7 +95,7 @@ namespace MCGalaxy.Commands.Info
 				p.Message("&f• &SHas the rank of {0}", group.ColoredName);
 				p.Message("&f• &SHas modified &T{0} &Sblocks, &T{1} &Ssince login", who.TotalModified, who.SessionModified);
 				p.Message("&f• &SHas logged in &T{0} &Stimes", who.TimesVisited);
-				p.Message("&f• &SFirst login: &T{0}", who.FirstLogin.ToString("yyyy-MM-dd"));
+				p.Message("&f• &SFirst login: &T{0}&S, and is currently &Tonline", who.FirstLogin.ToString("yyyy-MM-dd"));
 				TimeSpan timeOnline = DateTime.UtcNow - who.SessionStartTime;
 				p.Message("&f• &SHas spent &T{0} &Son the server, &T{1} &Sthis session", who.TotalTime.Shorten(), timeOnline.Shorten());
 
