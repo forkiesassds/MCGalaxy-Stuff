@@ -13,3 +13,5 @@ Edited version of NasGen, made for the ClassicalNuts server.
 Alternate info command.
 ## writefont.cs
 Edited version of NA2's writefont to use the block you are holding instead of wool.
+## 8ball2.cs
+A NA2 like version of /8ball
