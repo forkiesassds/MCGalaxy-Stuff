@@ -80,12 +80,12 @@ namespace MCGalaxy.Commands.Info
 			
 			if (final.StartsWith("what color")) { responses = colors.ToArray(); }
 			else if (final.StartsWith("who")) { responses = players.ToArray(); }
-			else if (final.StartsWith("how much")) { responses = new string[] { "A lot.", "A little bit.", "None at all.", "Too many to even count." }; }
-			else if (final.StartsWith("what size")) { responses = sizes; }
-			else if (final.StartsWith("how large")) { responses = sizes; }
-			else if (final.StartsWith("how big")) { responses = sizes; }
-			else if (final.StartsWith("how long")) { responses = lengths; }
-			else if (final.StartsWith("how many")) { responses = new string[] { random.Next(100).ToString() }; }
+			else if (final.StartsWith("howmuch")) { responses = new string[] { "A lot.", "A little bit.", "None at all.", "Too many to even count." }; }
+			else if (final.StartsWith("whatsize")) { responses = sizes; }
+			else if (final.StartsWith("howlarge")) { responses = sizes; }
+			else if (final.StartsWith("howbig")) { responses = sizes; }
+			else if (final.StartsWith("howlong")) { responses = lengths; }
+			else if (final.StartsWith("howmany")) { responses = new string[] { random.Next(100).ToString() }; }
 			else if (final.StartsWith("should")) { responses = new string[] { "Probably not.", "Probably.", "No!", "Yes!", "Definitely!", "Do some more thinking." }; }
 			else if (final.StartsWith("when")) { responses = new string[] { DateTime.Now.AddSeconds(random.Next(63113851)).ToString("yyyy-MM-dd") }; }
 			else if (final.StartsWith("how")) { responses = new string[] { "Cannot answer your question." }; }
