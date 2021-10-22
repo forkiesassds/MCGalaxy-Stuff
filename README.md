@@ -15,3 +15,5 @@ Alternate info command.
 Edited version of NA2's writefont to use the block you are holding instead of wool.
 ## 8ball2.cs
 A NA2 like version of /8ball
+## spleef.cs
+A port of Supernova's spleef for MCGalaxy.
