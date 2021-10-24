@@ -22,6 +22,7 @@ namespace MCGalaxy.Games {
 		
 		Command cmd;
 		public override void Load(bool startup) {
+			OnBlockChangingEvent.Register(HandleBlockChanged, Priority.Low);
 			cmd = new CmdSpleef();
 			Command.Register(cmd);
 			
@@ -31,6 +32,7 @@ namespace MCGalaxy.Games {
 		}
 		
 		public override void Unload(bool shutdown) {
+			OnBlockChangingEvent.Unregister(HandleBlockChanged);
 			Command.Unregister(cmd);
 			RoundsGame game = SpleefGame.Instance;
 			if (game.Running) game.End();
@@ -48,6 +50,17 @@ namespace MCGalaxy.Games {
         }
     }
 	
+
+	
+    void HandleBlockChanged(Player p, ushort x, ushort y, ushort z, BlockID block, bool placing, ref bool cancel)
+    {
+	if ( SpleefGame.Instance.Running && !SpleefGame.Instance.Remaining.Contains(this) && SpleefGame.Instance.Map == level ) {
+    		Message("You are out of the round, and cannot break blocks.");
+                RevertBlock(x, y, z); 
+		cancel = true;
+                return;
+        }    
+    }
     public sealed partial class SpleefGame : RoundsGame {
         //plugin
          protected override void HookEventHandlers() {
