@@ -48,7 +48,7 @@ namespace MCGalaxy.Games {
 
 		void HandleBlockChanged(Player p, ushort x, ushort y, ushort z, BlockID block, bool placing, ref bool cancel)
 		{
-			if ( SpleefGame.Instance.Running && !SpleefGame.Instance.Remaining.Contains(p) && SpleefGame.Instance.Map == level ) 
+			if ( SpleefGame.Instance.Running && !SpleefGame.Instance.Remaining.Contains(p) && SpleefGame.Instance.Map == p.level ) 
 			{
 				p.Message("You are out of the round, and cannot break blocks.");
 				p.RevertBlock(x, y, z); 
