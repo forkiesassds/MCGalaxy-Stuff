@@ -23,7 +23,6 @@ namespace MCGalaxy.Games {
 		Command cmd;
 		public override void Load(bool startup) {
 			OnPlayerSpawningEvent.Register(HandlePlayerSpawning, Priority.High);
-			OnJoinedLevelEvent.Register(HandleOnJoinedLevel, Priority.High);
 			OnBlockChangingEvent.Register(HandleBlockChanged, Priority.High);
 			cmd = new CmdSpleef();
 			Command.Register(cmd);
@@ -35,7 +34,6 @@ namespace MCGalaxy.Games {
 		
 		public override void Unload(bool shutdown) {
 			OnPlayerSpawningEvent.Unregister(HandlePlayerSpawning);
-			OnJoinedLevelEvent.Unregister(HandleOnJoinedLevel);
 			OnBlockChangingEvent.Unregister(HandleBlockChanged);
 			Command.Unregister(cmd);
 			RoundsGame game = SpleefGame.Instance;
@@ -43,13 +41,9 @@ namespace MCGalaxy.Games {
 		}
 	    
 	        void HandlePlayerSpawning(Player p, ref Position pos, ref byte yaw, ref byte pitch, bool respawning) {
-		    if (!respawning || !Remaining.Contains(p)) return;
-		    Map.Message(p.ColoredName + " &Sis out of spleef!");
-		    OnPlayerDied(p);
-		}
-
-		void HandleOnJoinedLevel(Player p, Level prevLevel, Level level, ref bool announce) {
-		    HandleJoinedCommon(p, prevLevel, level, ref announce);
+		    if (!respawning || !SpleefGame.Instance.Remaining.Contains(p)) return;
+		    SpleefGame.Instance.Map.Message(p.ColoredName + " &Sis out of spleef!");
+		    SpleefGame.Instance.OnPlayerDied(p);
 		}
 
 		void HandleBlockChanged(Player p, ushort x, ushort y, ushort z, BlockID block, bool placing, ref bool cancel)
@@ -274,7 +268,7 @@ namespace MCGalaxy.Games {
             }
         }
 
-        void OnPlayerDied(Player p) {
+        public void OnPlayerDied(Player p) {
             if (!Remaining.Remove(p) || !RoundInProgress) return;
             Player[] players = Remaining.Items;
             
