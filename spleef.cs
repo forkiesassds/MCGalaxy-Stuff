@@ -50,17 +50,6 @@ namespace MCGalaxy.Games {
         }
     }
 	
-
-	
-    void HandleBlockChanged(Player p, ushort x, ushort y, ushort z, BlockID block, bool placing, ref bool cancel)
-    {
-	if ( SpleefGame.Instance.Running && !SpleefGame.Instance.Remaining.Contains(this) && SpleefGame.Instance.Map == level ) {
-    		Message("You are out of the round, and cannot break blocks.");
-                RevertBlock(x, y, z); 
-		cancel = true;
-                return;
-        }    
-    }
     public sealed partial class SpleefGame : RoundsGame {
         //plugin
          protected override void HookEventHandlers() {
@@ -86,6 +75,17 @@ namespace MCGalaxy.Games {
         void HandleOnJoinedLevel(Player p, Level prevLevel, Level level, ref bool announce) {
             HandleJoinedCommon(p, prevLevel, level, ref announce);
         }
+	    
+	void HandleBlockChanged(Player p, ushort x, ushort y, ushort z, BlockID block, bool placing, ref bool cancel)
+    	{
+		if ( SpleefGame.Instance.Running && !SpleefGame.Instance.Remaining.Contains(this) && SpleefGame.Instance.Map == level ) 
+		{
+			Message("You are out of the round, and cannot break blocks.");
+			RevertBlock(x, y, z); 
+			cancel = true;
+			return;
+		}    
+    	}
 		
 		//game
 		public VolatileArray<Player> Players = new VolatileArray<Player>();
