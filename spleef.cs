@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using MCGalaxy.Commands;
@@ -23,6 +23,7 @@ namespace MCGalaxy.Games {
 		Command cmd;
 		public override void Load(bool startup) {
 			OnPlayerSpawningEvent.Register(HandlePlayerSpawning, Priority.High);
+            		OnJoinedLevelEvent.Register(HandleOnJoinedLevel, Priority.High);
 			OnBlockChangingEvent.Register(HandleBlockChanged, Priority.High);
 			cmd = new CmdSpleef();
 			Command.Register(cmd);
@@ -34,6 +35,7 @@ namespace MCGalaxy.Games {
 		
 		public override void Unload(bool shutdown) {
 			OnPlayerSpawningEvent.Unregister(HandlePlayerSpawning);
+			OnJoinedLevelEvent.Unregister(HandleOnJoinedLevel);
 			OnBlockChangingEvent.Unregister(HandleBlockChanged);
 			Command.Unregister(cmd);
 			RoundsGame game = SpleefGame.Instance;
@@ -45,6 +47,26 @@ namespace MCGalaxy.Games {
 		    SpleefGame.Instance.Map.Message(p.ColoredName + " &Sis out of spleef!");
 		    SpleefGame.Instance.OnPlayerDied(p);
 		}
+
+        	void HandleOnJoinedLevel(Player p, Level prevLevel, Level level, ref bool announce) {
+          		if (prevLevel == SpleefGame.Instance.Map && level != SpleefGame.Instance.Map) {
+                		if (SpleefGame.Instance.Picker.Voting) SpleefGame.Instance.Picker.ResetVoteMessage(p);
+               			p.SendCpeMessage(CpeMessageType.Status1, "");
+            			p.SendCpeMessage(CpeMessageType.Status2, "");
+            			p.SendCpeMessage(CpeMessageType.Status3, "");
+                		SpleefGame.Instance.PlayerLeftGame(p);
+            		} else if (level == SpleefGame.Instance.Map) {
+                		if (SpleefGame.Instance.Picker.Voting) SpleefGame.Instance.Picker.SendVoteMessage(p);            		}
+            
+            		if (level != SpleefGame.Instance.Map) return;
+            
+            		if (prevLevel == SpleefGame.Instance.Map || SpleefGame.Instance.LastMap.Length == 0) {
+            		    announce = false;
+            		} else if (prevLevel != null && prevLevel.name.CaselessEq(SpleefGame.Instance.LastMap)) {
+            		    // prevLevel is null when player joins main map
+            		    announce = false;
+            		}
+        	}
 
 		void HandleBlockChanged(Player p, ushort x, ushort y, ushort z, BlockID block, bool placing, ref bool cancel)
 		{
