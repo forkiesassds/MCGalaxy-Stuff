@@ -328,7 +328,7 @@ namespace MCGalaxy.Games {
             lvl.Config.Deletable  = false;
             lvl.Config.Buildable  = false;
             lvl.Config.Drawing    = false;
-            lvl.Config.MOTD = "Welcome to the Spleef map! -hax";
+            lvl.Config.MOTD = "Welcome to the Spleef map! -hax reach=5 -push";
             
             lvl.spawnx = (ushort)(lvl.Width / 2);
             lvl.spawny = (ushort)(lvl.Height / 2 + 4);
