@@ -302,6 +302,9 @@ namespace MCGalaxy.Games {
             UpdateAllStatus();
             
             if (winner != null) {
+		winner.SendCpeMessage(CpeMessageType.BigAnnouncement, "&SYou win!");
+		winner.SendCpeMessage(CpeMessageType.SmallAnnouncement, "&T+30 &S" + Server.Config.Currency + "!");
+		winner.SetMoney(winner.money + 30);
                 winner.Message("Congratulations, you won this round of spleef!");
                 PlayerActions.Respawn(winner);
             } else {
