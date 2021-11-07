@@ -95,7 +95,7 @@ namespace MCGalaxy.Commands.Building {
 
 		public override void Help(Player p) {
 			p.Message("%T/WriteFont [font] [message]");
-			p.Message("%HWrites [message] in blocks. Supports color codes.");
+			p.Message("%HWrites [message] in blocks.");
 			MessageFonts(p);
 			p.Message("%HUse %T/WriteChat %Hfor default font shortcut.");
 		}
@@ -124,7 +124,7 @@ namespace MCGalaxy.Commands.Building {
 
 		public override void Help(Player p) {
 			p.Message("%T/WriteChat [message]");
-			p.Message("%HWrites [message] with NA2 chat font. Supports color codes.");
+			p.Message("%HWrites [message] with the Minecraft font.");
 			p.Message("%HSee %T/WriteFont %Hfor other fonts.");
 		}
 	}
