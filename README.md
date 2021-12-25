@@ -17,3 +17,7 @@ Edited version of NA2's writefont to use the block you are holding instead of wo
 A NA2 like version of /8ball
 ## spleef.cs
 A port of Supernova's spleef for MCGalaxy.
+## 14a08gen.cs 
+A recration of 14a_08's terrain generator using existing code as reference.
+## 15agen.cs 
+A recration of 15a's terrain generator using existing code as reference.
