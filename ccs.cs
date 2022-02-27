@@ -332,7 +332,7 @@ namespace PluginCCS {
         public static string runArgSpaceSubstitute = "_";
         public override string creator { get { return ""; } }
         public override string name { get { return "ccs"; } }
-        public override string MCGalaxy_Version { get { return "1.9.3.8"; } }
+        public override string MCGalaxy_Version { get { return "1.9.3.9"; } }
         
         private static Dictionary<string, ScriptData> scriptDataAtPlayer = new Dictionary<string, ScriptData>();
         public static ScriptData GetScriptData(Player p) {
@@ -927,7 +927,7 @@ namespace PluginCCS {
             string valueString = args[1];
             byte? type = GetEnvColorType(prop);
             if (type != null) {
-                p.SendEnvColor((byte)type, valueString);
+                p.Session.SendSetEnvColor((byte)type, valueString);
                 return;
             }
             if (prop.CaselessEq("weather")) {
