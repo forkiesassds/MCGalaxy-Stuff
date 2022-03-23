@@ -66,7 +66,7 @@ namespace MCGalaxy.Commands.Info
             Random random = new Random(final.ToLower().GetHashCode());
             string[] responses;
 			string[] sizes = new string[] { "Small.", "Pretty big.", "Medium sized.", "Insanely small.", "As large as a particle of dust.", "Can't even see!", "Extremely large.", "As large as a pile of landfill", "Universe sized!", "Multiverse sized!", "So large it doesn't exist!", "So small it doesn't exist!" };
-			string[] lengths = new string[] { "Short.", "Pretty long.", "Medium in length.", "Insanely short.", "As short as a human hair.", "Don't know!", "Extremely long.", "As long as a room.", "As long as a universe!", "As long as a multiverse!", "So long it doesn't exist!", "So long it doesn't exist!" };
+			string[] lengths = new string[] { "Short.", "Pretty long.", "Medium in length.", "Insanely short.", "As short as a human hair.", "Don't know!", "Extremely long.", "As long as a room.", "As long as a universe!", "As long as a multiverse!", "So long it doesn't exist!", "So short it doesn't exist!" };
 			List<string> colors = new List<string>();
 			List<string> players = new List<string>();
 			foreach (ColorDesc col in Colors.List) {
