@@ -21,3 +21,5 @@ A port of Supernova's spleef for MCGalaxy.
 A recration of 14a_08's terrain generator using existing code as reference.
 ## 15agen.cs 
 A recration of 15a's terrain generator using existing code as reference.
+## alphagen.cs
+A port of Minecraft Alpha's terrain generator. Will NOT generate the same terrain using the same seeds.
