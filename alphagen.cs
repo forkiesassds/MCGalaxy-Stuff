@@ -623,7 +623,7 @@ namespace MCGalaxy
 
 		public void populateNoiseArray(double[] ad, double d, double d1, double d2, int i, int j, int k, double d3, double d4, double d5, double d6)
 		{
-			if (j == 1)
+			if (j == 1 || k == 1)
 			{
 				bool flag = false;
 				bool flag1 = false;
@@ -643,9 +643,9 @@ namespace MCGalaxy
 					}
 					int k4 = (int)(j4 & 0xFFL);
 					double d17 = (d14 -= (double)j4) * d14 * d14 * (d14 * (d14 * 6.0 - 15.0) + 10.0);
-					for (int l4 = 0; l4 < k; ++l4)
+					for (int l4 = 0; l4 < (k == 1 ? j : k); ++l4)
 					{
-						double d19 = (d2 + (double)l4) * d5 + this.zCoord;
+						double d19 = k == 1 ? ((d1 + (double)l4) * d4 + zCoord) : ((d2 + (double)l4) * d5 + zCoord);
 						long j5 = (long)d19;
 						if (d19 < (double)j5)
 						{
@@ -666,49 +666,7 @@ namespace MCGalaxy
 				}
 				return;
 			}
-			if (k == 1)
-			{
-				bool flag = false;
-				bool flag1 = false;
-				bool flag2 = false;
-				bool flag3 = false;
-				double d8 = 0.0;
-				double d10 = 0.0;
-				int j3 = 0;
-				double d12 = 1.0 / d6;
-				for (int i4 = 0; i4 < i; ++i4)
-				{
-					double d14 = (d + (double)i4) * d3 + this.xCoord;
-					long j4 = (long)d14;
-					if (d14 < (double)j4)
-					{
-						--j4;
-					}
-					int k4 = (int)(j4 & 0xFFL);
-					double d17 = (d14 -= (double)j4) * d14 * d14 * (d14 * (d14 * 6.0 - 15.0) + 10.0);
-					for (int l4 = 0; l4 < j; ++l4)
-					{
-						double d19 = (d1 + (double)l4) * d4 + this.zCoord;
-						long j5 = (long)d19;
-						if (d19 < (double)j5)
-						{
-							--j5;
-						}
-						int l5 = (int)(j5 & 0xFFL);
-						double d21 = (d19 -= (double)j5) * d19 * d19 * (d19 * (d19 * 6.0 - 15.0) + 10.0);
-						int l = this.permutations[k4] + 0;
-						int j1 = this.permutations[l] + l5;
-						int k1 = this.permutations[k4 + 1] + 0;
-						int l1 = this.permutations[k1] + l5;
-						double d9 = this.lerp(d17, this.a(this.permutations[j1], d14, d19), this.grad(this.permutations[l1], d14 - 1.0, 0.0, d19));
-						double d11 = this.lerp(d17, this.grad(this.permutations[j1 + 1], d14, 0.0, d19 - 1.0), this.grad(this.permutations[l1 + 1], d14 - 1.0, 0.0, d19 - 1.0));
-						double d23 = this.lerp(d21, d9, d11);
-						int n = j3++;
-						ad[n] = ad[n] + d23 * d12;
-					}
-				}
-				return;
-			}
+			
 			int i1 = 0;
 			double d7 = 1.0 / d6;
 			int i2 = -1;
