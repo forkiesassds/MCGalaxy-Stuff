@@ -33,7 +33,12 @@ namespace MCGalaxy
 
 		public static bool Gen(Player p, Level lvl, string seed)
 		{
-			ChunkBasedOctaveGenerator generator = new ChunkBasedOctaveGenerator(MapGen.MakeInt(seed));
+			MapGenBiomeName theme = MapGenBiomeName.Forest;
+			int rng_seed;
+			if (!MapGen.ParseArgs(p, seed, out rng_seed, ref theme)) return false;
+			MapGenBiome theme2 = MapGenBiome.Get(theme);
+			theme2.ApplyEnv(lvl.Config);
+			ChunkBasedOctaveGenerator generator = new ChunkBasedOctaveGenerator(rng_seed, theme2);
 
 			int totalChunks = (lvl.Length / 16) * (lvl.Width / 16);
 			int chunksGenerated = 1;
@@ -45,7 +50,7 @@ namespace MCGalaxy
 					{
 						if (blockY <= ((lvl.Height / 2) - 64))
 						{
-							lvl.SetBlock(blockX, blockY, blockZ, Block.Stone);
+							lvl.SetBlock(blockX, blockY, blockZ, theme2.Cliff);
 						}
 					}
 				}
@@ -76,11 +81,11 @@ namespace MCGalaxy
 			}
 
 			p.Message("Now creating trees.");
-			GenPlants(lvl, seed);
+			GenPlants(lvl, seed, theme2);
 			return true;
 		}
 
-		private static void GenPlants(Level lvl, string seed)
+		private static void GenPlants(Level lvl, string seed, MapGenBiome biome)
 		{
 			JavaRandom rand = new JavaRandom(MapGen.MakeInt(seed + "tree"));
 			NoiseGeneratorPerlin treeGen = new NoiseGeneratorPerlin(rand);
@@ -89,13 +94,15 @@ namespace MCGalaxy
 				for (int z = 0; z < lvl.Length; ++z)
 					for (int x = 0; x < lvl.Width; ++x)
 					{
-						if (lvl.FastGetBlock((ushort)x, (ushort)y, (ushort)z) == Block.Grass &&
+						if (lvl.FastGetBlock((ushort)x, (ushort)y, (ushort)z) == biome.Surface &&
 							lvl.FastGetBlock((ushort)x, (ushort)(y + 1), (ushort)z) == Block.Air)
 						{
 							bool nope = false;
 							int maybenot = 0;
 							if (rand.Next(0, 50) == 0)
 							{
+								Tree tree = GetTreeGen(biome, rand);
+								if (tree == null) continue;
 								for (int x1 = 0; x1 < 5; x1++)
 								{
 									for (int y1 = 0; y1 < 5; y1++)
@@ -107,6 +114,7 @@ namespace MCGalaxy
 										}
 									}
 								}
+								
 								if (nope) continue;
 								double xVal = (double)x / 200, yVal = (double)y / 130, zVal = z / 200;
 								const double adj = 1;
@@ -116,30 +124,39 @@ namespace MCGalaxy
 								double value = treeGen.generateNoise(xVal, yVal, zVal);
 								if (value > rand.NextFloat())
 								{
-									GenTree((ushort)x, (ushort)(y + 1), (ushort)z, rand, lvl, seed);
-									lvl.SetBlock((ushort)x, (ushort)(y), (ushort)z, Block.Dirt);
+									GenTree((ushort)x, (ushort)(y + 1), (ushort)z, rand, lvl, seed, tree);
+									lvl.SetBlock((ushort)x, (ushort)(y), (ushort)z, biome.Ground);
 								}
 								else if (rand.Next(0, 20) == 0)
 								{
-									GenTree((ushort)x, (ushort)(y + 1), (ushort)z, rand, lvl, seed);
-									lvl.SetBlock((ushort)x, (ushort)(y), (ushort)z, Block.Dirt);
+									GenTree((ushort)x, (ushort)(y + 1), (ushort)z, rand, lvl, seed, tree);
+									lvl.SetBlock((ushort)x, (ushort)(y), (ushort)z, biome.Ground);
 								}
 							}
 						}
 					}
 		}
 
-		static void GenTree(ushort x, ushort y, ushort z, JavaRandom random, Level lvl, string seed)
+        static Tree GetTreeGen(MapGenBiome biome, JavaRandom rnd)
 		{
-			Tree tree;
-			if (random.Next(0, 20) == 0)
+			if (biome.TreeType == null) return null;
+			if (biome.TreeType == "") 
 			{
-				tree = new OakTree();
+				if (rnd.Next(0, 20) == 0)
+				{
+					return new OakTree();
+				}
+				else
+                {
+					return new ClassicTree() { rng = rnd };
+				}
 			}
-			else
-			{
-				tree = new ClassicTree();
-			}
+
+			return Tree.TreeTypes[biome.TreeType]();
+		}
+
+		static void GenTree(ushort x, ushort y, ushort z, JavaRandom random, Level lvl, string seed, Tree tree)
+		{
 			tree.SetData(new Random(MapGen.MakeInt(seed + "tree")), random.Next(0, 8));
 			PlaceBlocks(lvl, tree, x, y, z);
 		}
@@ -159,6 +176,7 @@ namespace MCGalaxy
 	public class ChunkBasedOctaveGenerator
 	{
 		private JavaRandom rand;
+		private MapGenBiome biome;
 		private NoiseGeneratorOctaves noiseGen1;
 		private NoiseGeneratorOctaves noiseGen2;
 		private NoiseGeneratorOctaves noiseGen3;
@@ -176,9 +194,10 @@ namespace MCGalaxy
 		double[] noise6;
 		double[] noise7;
 
-		public ChunkBasedOctaveGenerator(int seed)
+		public ChunkBasedOctaveGenerator(int seed, MapGenBiome theme)
 		{
 			this.rand = new JavaRandom(seed);
+			biome = theme;
 			this.noiseGen1 = new NoiseGeneratorOctaves(this.rand, 16);
 			this.noiseGen2 = new NoiseGeneratorOctaves(this.rand, 16);
 			this.noiseGen3 = new NoiseGeneratorOctaves(this.rand, 8);
@@ -234,12 +253,12 @@ namespace MCGalaxy
 									int i51 = 0;
 									if (i11 * 8 + i30 < b5)
 									{
-										i51 = Block.StillWater;
+										i51 = biome.Water;
 									}
 
 									if (d46 > 0.0D)
 									{
-										i51 = Block.Stone;
+										i51 = biome.Cliff;
 									}
 
 									blocks[i42] = (byte)i51;
@@ -264,7 +283,7 @@ namespace MCGalaxy
 
 		private void replaceSurfaceBlocks(int chunkX, int chunkZ, byte[] blocks)
 		{
-			byte b4 = 64;
+			byte seaLevel = 64;
 			double d5 = 8.0D / 256D;
 			this.sandNoise = this.noiseGen4.generateNoiseOctaves(this.sandNoise, (double)(chunkX * 16), (double)(chunkZ * 16), 0.0D, 16, 16, 1, d5, d5, 1.0D);
 			this.gravelNoise = this.noiseGen4.generateNoiseOctaves(this.gravelNoise, (double)(chunkZ * 16), 109.0134D, (double)(chunkX * 16), 16, 1, 16, d5, 1.0D, d5);
@@ -274,74 +293,67 @@ namespace MCGalaxy
 			{
 				for (int i8 = 0; i8 < 16; ++i8)
 				{
-					bool z9 = this.sandNoise[i7 * 16 + i8] + this.rand.NextFloat() * 0.2D > 0.0D;
-					bool z10 = this.gravelNoise[i7 + i8 * 16] + this.rand.NextFloat() * 0.2D > 3.0D;
-					int i11 = (int)(this.stoneNoise[i7 * 16 + i8] / 3.0D + 3.0D + this.rand.NextFloat() * 0.25D);
+					bool generateSandBeach = this.sandNoise[i7 * 16 + i8] + this.rand.NextFloat() * 0.2D > 0.0D;
+					bool generateGravelBeach = this.gravelNoise[i7 + i8 * 16] + this.rand.NextFloat() * 0.2D > 3.0D;
+					int exposedStone = (int)(this.stoneNoise[i7 * 16 + i8] / 3.0D + 3.0D + this.rand.NextFloat() * 0.25D);
 					int i12 = -1;
-					byte b13 = Block.Grass;
-					byte b14 = Block.Dirt;
+					byte surface = biome.Surface;
+					byte ground = biome.Ground;
+					byte cliff = biome.Cliff;
+					byte water = biome.Water;
+					if (water == 0) seaLevel = 0;
 
 					for (int i15 = 127; i15 >= 0; --i15)
 					{
 						int i16 = (i7 * 16 + i8) * 128 + i15;
-						byte b17 = blocks[i16];
-						if (b17 == 0)
+						byte block = blocks[i16];
+						if (block == 0)
 						{
 							i12 = -1;
 						}
-						else if (b17 == Block.Stone)
+						else if (block == cliff)
 						{
 							if (i12 == -1)
 							{
-								if (i11 <= 0)
+								if (exposedStone <= 0)
 								{
-									b13 = 0;
-									b14 = Block.Stone;
+									surface = 0;
+									ground = cliff;
 								}
-								else if (i15 >= b4 - 4 && i15 <= b4 + 1)
+								else if (i15 >= seaLevel - 4 && i15 <= seaLevel + 1)
 								{
-									b13 = Block.Grass;
-									b14 = Block.Dirt;
-									if (z10)
+									if (generateGravelBeach)
 									{
-										b13 = 0;
+										surface = 0;
+										ground = biome.BeachRocky;
 									}
 
-									if (z10)
+									if (generateSandBeach)
 									{
-										b14 = Block.Gravel;
-									}
-
-									if (z9)
-									{
-										b13 = Block.Sand;
-									}
-
-									if (z9)
-									{
-										b14 = Block.Sand;
+										surface = biome.BeachSandy;
+										ground = biome.BeachSandy;
 									}
 								}
 
-								if (i15 < b4 && b13 == 0)
+								if (i15 < seaLevel && surface == 0)
 								{
-									b13 = Block.StillWater;
+									surface = water;
 								}
 
-								i12 = i11;
-								if (i15 >= b4 - 1)
+								i12 = exposedStone;
+								if (i15 >= seaLevel - 1)
 								{
-									blocks[i16] = b13;
+									blocks[i16] = surface;
 								}
 								else
 								{
-									blocks[i16] = b14;
+									blocks[i16] = ground;
 								}
 							}
 							else if (i12 > 0)
 							{
 								--i12;
-								blocks[i16] = b14;
+								blocks[i16] = ground;
 							}
 						}
 					}
