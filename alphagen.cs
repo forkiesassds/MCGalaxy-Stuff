@@ -1,5 +1,5 @@
-using ClassicalSharp.Generator;
 using MCGalaxy.Generator;
+using MCGalaxy.Generator.Classic;
 using MCGalaxy.Generator.Foliage;
 using System;
 
@@ -10,7 +10,7 @@ namespace MCGalaxy
 	public sealed class PluginAlphaGen : Plugin
 	{
 		public override string name { get { return "PluginAlphaGen"; } }
-		public override string MCGalaxy_Version { get { return "1.9.4.5"; } }
+		public override string MCGalaxy_Version { get { return "1.9.4.7"; } }
 		public override string creator { get { return ""; } }
 
 
@@ -80,8 +80,8 @@ namespace MCGalaxy
 			return true;
 		}
 
-        private static void GenPlants(Level lvl, string seed)
-        {
+		private static void GenPlants(Level lvl, string seed)
+		{
 			JavaRandom rand = new JavaRandom(MapGen.MakeInt(seed + "tree"));
 			NoiseGeneratorPerlin treeGen = new NoiseGeneratorPerlin(rand);
 
@@ -96,16 +96,16 @@ namespace MCGalaxy
 							int maybenot = 0;
 							if (rand.Next(0, 50) == 0)
 							{
-								for (int x1 = 0; x1 < 5; x1++) 
+								for (int x1 = 0; x1 < 5; x1++)
 								{
 									for (int y1 = 0; y1 < 5; y1++)
-                                    {
+									{
 										for (int z1 = 0; z1 < 5; z1++)
-                                        {
+										{
 											if (!lvl.IsAirAt((ushort)(x + x1), (ushort)(y + y1), (ushort)(z + z1))) maybenot++;
 											if (maybenot > 63) nope = true;
 										}
-                                    }
+									}
 								}
 								if (nope) continue;
 								double xVal = (double)x / 200, yVal = (double)y / 130, zVal = z / 200;
@@ -176,7 +176,7 @@ namespace MCGalaxy
 		double[] noise6;
 		double[] noise7;
 
-        public ChunkBasedOctaveGenerator(int seed)
+		public ChunkBasedOctaveGenerator(int seed)
 		{
 			this.rand = new JavaRandom(seed);
 			this.noiseGen1 = new NoiseGeneratorOctaves(this.rand, 16);
@@ -360,7 +360,7 @@ namespace MCGalaxy
 
 			return chunkBlocks;
 		}
-        private double[] initializeNoiseField(double[] d1, int i2, int i3, int i4, int i5, int i6, int i7)
+		private double[] initializeNoiseField(double[] d1, int i2, int i3, int i4, int i5, int i6, int i7)
 		{
 			if (d1 == null)
 			{
@@ -666,7 +666,7 @@ namespace MCGalaxy
 				}
 				return;
 			}
-			
+
 			int i1 = 0;
 			double d7 = 1.0 / d6;
 			int i2 = -1;
