@@ -31,11 +31,14 @@ namespace MCGalaxy
 			return array[x << 11 | z << 7 | y];
 		}
 
-		public static bool Gen(Player p, Level lvl, string seed)
+		public static bool Gen(Player p, Level lvl, MapGenArgs mgArgs)
 		{
 			MapGenBiomeName theme = MapGenBiomeName.Forest;
-			int rng_seed;
-			if (!MapGen.ParseArgs(p, seed, out rng_seed, ref theme)) return false;
+            
+			if (!mgArgs.ParseArgs(p)) return false;
+            theme = mgArgs.Biome;
+            int rng_seed = mgArgs.Seed;
+            
 			MapGenBiome theme2 = MapGenBiome.Get(theme);
 			theme2.ApplyEnv(lvl.Config);
 			ChunkBasedOctaveGenerator generator = new ChunkBasedOctaveGenerator(rng_seed, theme2);
@@ -81,13 +84,13 @@ namespace MCGalaxy
 			}
 
 			p.Message("Now creating trees.");
-			GenPlants(lvl, seed, theme2);
+			GenPlants(lvl, rng_seed, theme2);
 			return true;
 		}
 
-		private static void GenPlants(Level lvl, string seed, MapGenBiome biome)
+		private static void GenPlants(Level lvl, int seed, MapGenBiome biome)
 		{
-			JavaRandom rand = new JavaRandom(MapGen.MakeInt(seed + "tree"));
+			JavaRandom rand = new JavaRandom(seed);
 			NoiseGeneratorPerlin treeGen = new NoiseGeneratorPerlin(rand);
 
 			for (int y = 0; y < (ushort)(lvl.Height - 1); y++)
@@ -155,9 +158,10 @@ namespace MCGalaxy
 			return Tree.TreeTypes[biome.TreeType]();
 		}
 
-		static void GenTree(ushort x, ushort y, ushort z, JavaRandom random, Level lvl, string seed, Tree tree)
+		static void GenTree(ushort x, ushort y, ushort z, JavaRandom random, Level lvl, int seed, Tree tree)
 		{
-			tree.SetData(new Random(MapGen.MakeInt(seed + "tree")), random.Next(0, 8));
+            //new random every time a tree is generated? Trees generated close-in-time to each other will be the same, is that intentional?
+			tree.SetData(new Random(seed), random.Next(0, 8));
 			PlaceBlocks(lvl, tree, x, y, z);
 		}
 
