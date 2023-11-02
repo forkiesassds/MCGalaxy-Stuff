@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 using MCGalaxy.Generator;
 using MCGalaxy.Generator.Foliage;
@@ -49,7 +50,7 @@ namespace MCGalaxy
             {
                 for (ushort chunkX = 0; chunkX < width; chunkX++)
                 {
-                    p.Message(String.Format("Generating chunk {0} out of {1}", chunksGenerated, totalChunks));
+                    p.Message(string.Format("Generating chunk {0} out of {1}", chunksGenerated, totalChunks));
                     world.GetBlock(chunkX << 4, 1, chunkZ << 4);
                     chunksGenerated++;
                 }
@@ -487,7 +488,7 @@ namespace MCGalaxy
             }
 
             //TODO: implement thing to implement world theme trees within WorldGenerator
-            WorldGenerator? object18 = null;
+            WorldGenerator object18 = null;
 
             if (worldObj.theme.TreeType == "") object18 = new WorldGenTrees();
             else if (worldObj.theme.TreeType != null) object18 = new WorldGenMCGTreeWrapper(Tree.TreeTypes[worldObj.theme.TreeType]());
