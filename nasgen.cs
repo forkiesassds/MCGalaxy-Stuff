@@ -472,7 +472,7 @@ namespace MCGalaxy
 
         public static void GenTree(NasGen.GenInstance instance, Level lvl, Random r, int x, int y, int z, int height, bool broadcastChange = false)
         {
-            Tree? tree = null;
+            Tree tree = null;
             if (instance.biome.TreeType == "")
                 if (r.Next(0, 20) == 0)
                 {
