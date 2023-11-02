@@ -1478,7 +1478,7 @@ namespace MCGalaxy
         public int Next(int bits)
         {
             seed = (seed * value + 0xBL) & mask;
-            return (int)(seed >>> (48 - bits));
+            return (int)(long)(((ulong)seed) >> (48 - bits));
         }
 
         public int NextInt()
