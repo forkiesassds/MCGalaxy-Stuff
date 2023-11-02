@@ -549,7 +549,7 @@ namespace MCGalaxy
     {
         protected int range = 8;
         protected JavaRandom rand = new JavaRandom();
-        protected GenWorld? worldObj;
+        protected GenWorld worldObj;
 
         public void generate(GenWorld world, int chunkX, int chunkZ, ref byte[] chunkData)
         {
