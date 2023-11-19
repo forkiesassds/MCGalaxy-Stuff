@@ -1,24 +1,128 @@
 using System;
 using System.Runtime.InteropServices;
+
+using MCGalaxy;
+using MCGalaxy.Commands;
 using MCGalaxy.Generator;
 using MCGalaxy.Generator.Foliage;
 
-namespace MCGalaxy
+namespace VeryPlugins
 {
     public sealed class PluginAlphaGen : Plugin
     {
         public override string name { get { return "PluginAlphaGen"; } }
-        public override string MCGalaxy_Version { get { return "1.9.4.7"; } }
+        public override string MCGalaxy_Version { get { return "1.9.4.8"; } }
         public override string creator { get { return ""; } }
 
 
         public override void Load(bool startup)
         {
-            MapGen.Register("alphaGen", GenType.Advanced, AlphaGen.Gen, "hello?");
+            //HACK: why do messages not support newlines???
+            MapGen.Register("alphaGen", GenType.Advanced, AlphaGen.Gen, 
+                "The map generator supports defining arguments. " + 
+                LineString("For example: \"genCaves=false,theme=Arctic,seed=Glacier\" generates a map without any caves" + 
+                ", with the Arctic theme and using the seed \"Glacier\".") +
+                LineString("The following arguments are avalible:") +
+                LineString("genCaves (boolean): whether or not to generate caves.") +
+                LineString("theme (many values): the theme of the map.") +
+                LineString("seed (long integer or string): the seed of the map") +
+                LineString("xChunkOffset (integer) offset of chunk position in the x direction") +
+                LineString("zChunkOffset (integer) offset of chunk position in the z direction"));
         }
         public override void Unload(bool shutdown)
         {
 
+        }
+
+        public static string LineString(string str)
+        {
+            return str + "".PadRight(64 - (str.Length & 63), ' ');
+        }
+    }
+    
+    public class MapGenArgsHack : MapGenArgs
+    {
+        public struct GenArgs
+        {
+            public bool GenCaves = true;
+            public MapGenBiomeName Biome = Server.Config.DefaultMapGenBiome;
+            public bool HasSeed;
+            public long LongSeed;
+            public int xChunkOffset;
+            public int zChunkOffset;
+
+            public GenArgs()
+            {
+                GenCaves = true;
+                Biome = Server.Config.DefaultMapGenBiome;
+            }
+        }
+
+        public delegate bool GenArgSelector(Player p, string arg, ref GenArgs args);
+        public GenArgs ArgsForGen = new GenArgs();
+
+        public new MapGenArgSelector ArgFilter = (arg) => arg.Contains("=");
+        public new GenArgSelector ArgParser = (Player p, string arg, ref GenArgs args) => 
+        {
+            string[] split = arg.Split('=');
+            string key = split[0];
+            string value = split.Skip(1).Join("=");
+            
+
+            //TODO: add more options
+            switch (key) 
+            {
+                case "genCaves": 
+                    if (!bool.TryParse(value, out args.GenCaves))
+                    {
+                        p.Message("Value " + value + " is not a valid value for genCaves!");
+                        return false;
+                    }
+                    break;
+                case "theme":
+                    if (!CommandParser.GetEnum(p, value, "Theme", ref args.Biome)) return false;
+                    break;
+                case "seed":
+                    if (!long.TryParse(value, out args.LongSeed))
+                        args.LongSeed = value.JavaStringHashCode();
+
+                    args.HasSeed = true;
+                    break;
+                case "xChunkOffset":
+                    if (!int.TryParse(value, out args.xChunkOffset))
+                    {
+                        p.Message("Value " + value + " is not a valid value for xChunkOffset!");
+                        return false;
+                    }
+                    break;
+                case "zChunkOffset":
+                    if (!int.TryParse(value, out args.zChunkOffset))
+                    {
+                        p.Message("Value " + value + " is not a valid value for zChunkOffset!");
+                        return false;
+                    }
+                    break;
+            }
+            return true;
+        };
+
+
+        public new bool ParseArgs(Player p) {
+            foreach (string arg in Args.Split(','))
+            {
+                if (arg.Length == 0) continue;
+                
+                if (ArgFilter(arg)) {
+                    if (!ArgParser(p, arg, ref ArgsForGen)) return false;
+                } else if (long.TryParse(arg, out ArgsForGen.LongSeed)) { 
+                    ArgsForGen.HasSeed = true;
+                } else {
+                    if (!CommandParser.GetEnum(p, arg, "Seed", ref Biome)) return false;
+                }
+            }
+            
+            if (!ArgsForGen.HasSeed) ArgsForGen.LongSeed = RandomDefault ? new JavaRandom().NextLong() : -1;
+            return true;
         }
     }
 
@@ -26,11 +130,12 @@ namespace MCGalaxy
     {
         public static bool Gen(Player p, Level lvl, MapGenArgs mgArgs)
         {
-            MapGenBiomeName theme = MapGenBiomeName.Forest;
+            MapGenArgsHack hack = new MapGenArgsHack();
+            hack.Args = mgArgs.Args;
 
-            if (!mgArgs.ParseArgs(p)) return false;
-            theme = mgArgs.Biome;
-            int rng_seed = mgArgs.Seed;
+            if (!hack.ParseArgs(p)) return false;
+            MapGenBiomeName theme = hack.ArgsForGen.Biome;
+            long rngSeed = hack.ArgsForGen.LongSeed;
 
             MapGenBiome theme2 = MapGenBiome.Get(theme);
             theme2.ApplyEnv(lvl.Config);
@@ -38,10 +143,12 @@ namespace MCGalaxy
             int width = (int)Math.Ceiling(lvl.Width / 16.0D);
             int length = (int)Math.Ceiling(lvl.Length / 16.0D);
 
-            GenWorld world = new GenWorld(width, length, lvl.Height, theme2, rng_seed, lvl);
+            GenWorld world = new GenWorld(width, length, lvl.Height, theme2, hack.ArgsForGen, lvl);
 
-            ChunkBasedOctaveGenerator generator = new ChunkBasedOctaveGenerator(world, rng_seed);
+            ChunkBasedOctaveGenerator generator = new ChunkBasedOctaveGenerator(world, rngSeed);
             world.chunkGenerator = generator;
+
+            p.Message("Begining generation of world with seed \"" + rngSeed + "\"");
 
             int totalChunks = width * length;
             int chunksGenerated = 1;
@@ -101,16 +208,16 @@ namespace MCGalaxy
 
         public ChunkBasedOctaveGenerator(GenWorld world, long seed)
         {
-            this.worldObj = world;
-            this.rand = new JavaRandom(seed);
-            this.minLimitNoise = new NoiseGeneratorOctaves(this.rand, 16);
-            this.maxLimitNoise = new NoiseGeneratorOctaves(this.rand, 16);
-            this.mainNoise = new NoiseGeneratorOctaves(this.rand, 8);
-            this.beachNoise = new NoiseGeneratorOctaves(this.rand, 4);
-            this.surfaceHeightNoise = new NoiseGeneratorOctaves(this.rand, 4);
-            this.scaleNoise = new NoiseGeneratorOctaves(this.rand, 10);
-            this.depthNoise = new NoiseGeneratorOctaves(this.rand, 16);
-            this.treeDensityNoise = new NoiseGeneratorOctaves(this.rand, 8);
+            worldObj = world;
+            rand = new JavaRandom(seed);
+            minLimitNoise = new NoiseGeneratorOctaves(rand, 16);
+            maxLimitNoise = new NoiseGeneratorOctaves(rand, 16);
+            mainNoise = new NoiseGeneratorOctaves(rand, 8);
+            beachNoise = new NoiseGeneratorOctaves(rand, 4);
+            surfaceHeightNoise = new NoiseGeneratorOctaves(rand, 4);
+            scaleNoise = new NoiseGeneratorOctaves(rand, 10);
+            depthNoise = new NoiseGeneratorOctaves(rand, 16);
+            treeDensityNoise = new NoiseGeneratorOctaves(rand, 8);
         }
 
         private void generateTerrain(int chunkX, int chunkZ, ref byte[] blocks)
@@ -121,7 +228,7 @@ namespace MCGalaxy
             int i6 = b4 + 1;
             int b7 = (worldObj.wHeight / 8) + 1;
             int i8 = b4 + 1;
-            this.noiseArray = this.initializeNoiseField(this.noiseArray, chunkX * b4, 0, chunkZ * b4, i6, b7, i8);
+            noiseArray = initializeNoiseField(noiseArray, chunkX * b4, 0, chunkZ * b4, i6, b7, i8);
 
             for (int blobX = 0; blobX < b4; ++blobX)
             {
@@ -130,14 +237,14 @@ namespace MCGalaxy
                     for (int blobY = 0; blobY < i5; ++blobY)
                     {
                         double d12 = 0.125D;
-                        double d14 = this.noiseArray[((blobX + 0) * i8 + blobZ + 0) * b7 + blobY + 0];
-                        double d16 = this.noiseArray[((blobX + 0) * i8 + blobZ + 1) * b7 + blobY + 0];
-                        double d18 = this.noiseArray[((blobX + 1) * i8 + blobZ + 0) * b7 + blobY + 0];
-                        double d20 = this.noiseArray[((blobX + 1) * i8 + blobZ + 1) * b7 + blobY + 0];
-                        double d22 = (this.noiseArray[((blobX + 0) * i8 + blobZ + 0) * b7 + blobY + 1] - d14) * d12;
-                        double d24 = (this.noiseArray[((blobX + 0) * i8 + blobZ + 1) * b7 + blobY + 1] - d16) * d12;
-                        double d26 = (this.noiseArray[((blobX + 1) * i8 + blobZ + 0) * b7 + blobY + 1] - d18) * d12;
-                        double d28 = (this.noiseArray[((blobX + 1) * i8 + blobZ + 1) * b7 + blobY + 1] - d20) * d12;
+                        double d14 = noiseArray[((blobX + 0) * i8 + blobZ + 0) * b7 + blobY + 0];
+                        double d16 = noiseArray[((blobX + 0) * i8 + blobZ + 1) * b7 + blobY + 0];
+                        double d18 = noiseArray[((blobX + 1) * i8 + blobZ + 0) * b7 + blobY + 0];
+                        double d20 = noiseArray[((blobX + 1) * i8 + blobZ + 1) * b7 + blobY + 0];
+                        double d22 = (noiseArray[((blobX + 0) * i8 + blobZ + 0) * b7 + blobY + 1] - d14) * d12;
+                        double d24 = (noiseArray[((blobX + 0) * i8 + blobZ + 1) * b7 + blobY + 1] - d16) * d12;
+                        double d26 = (noiseArray[((blobX + 1) * i8 + blobZ + 0) * b7 + blobY + 1] - d18) * d12;
+                        double d28 = (noiseArray[((blobX + 1) * i8 + blobZ + 1) * b7 + blobY + 1] - d20) * d12;
 
                         for (int blobPosY = 0; blobPosY < 8; ++blobPosY)
                         {
@@ -212,7 +319,7 @@ namespace MCGalaxy
                     byte water = worldObj.theme.Water;
                     if (water == 0) seaLevel = 0;
 
-                    for (int y = this.worldObj.wHeight - 1; y >= 0; --y)
+                    for (int y = worldObj.wHeight - 1; y >= 0; --y)
                     {
                         int index = y << 8 | z << 4 | x;
                         byte block = blocks[index];
@@ -277,11 +384,11 @@ namespace MCGalaxy
 
             byte[] chunkBlocks = new byte[256 * worldObj.wHeight];
 
-            this.rand.SetSeed((long)i1 * 341873128712L + (long)i2 * 132897987541L);
+            rand.SetSeed((i1 + worldObj.genArgs.xChunkOffset) * 341873128712L + (i2 + worldObj.genArgs.zChunkOffset) * 132897987541L);
 
-            this.generateTerrain(i1, i2, ref chunkBlocks);
-            this.replaceSurfaceBlocks(i1, i2, ref chunkBlocks);
-            this.caveGenerator.generate(this.worldObj, i1, i2, ref chunkBlocks);
+            generateTerrain(i1 + worldObj.genArgs.xChunkOffset, i2 + worldObj.genArgs.zChunkOffset, ref chunkBlocks);
+            replaceSurfaceBlocks(i1 + worldObj.genArgs.xChunkOffset, i2 + worldObj.genArgs.zChunkOffset, ref chunkBlocks);
+            if (worldObj.genArgs.GenCaves) caveGenerator.generate(worldObj, i1 + worldObj.genArgs.xChunkOffset, i2 + worldObj.genArgs.zChunkOffset, ref chunkBlocks);
 
             // for (int x = 0; x < 16; x++)
             // {
@@ -304,11 +411,11 @@ namespace MCGalaxy
 
             double horCoordScale = 684.412D;
             double vertCoordScale = 684.412D;
-            this.scaleNoiseSample = this.scaleNoise.generateNoiseOctaves(this.scaleNoiseSample, (double)xStart, (double)yStart, (double)zStart, xSamples, 1, zSamples, 1.0D, 0.0D, 1.0D);
-            this.depthNoiseSample = this.depthNoise.generateNoiseOctaves(this.depthNoiseSample, (double)xStart, (double)yStart, (double)zStart, xSamples, 1, zSamples, 100.0D, 0.0D, 100.0D);
-            this.mainNoiseSample = this.mainNoise.generateNoiseOctaves(this.mainNoiseSample, (double)xStart, (double)yStart, (double)zStart, xSamples, ySamples, zSamples, horCoordScale / 80.0D, vertCoordScale / 160.0D, horCoordScale / 80.0D);
-            this.minLimitNoiseSample = this.minLimitNoise.generateNoiseOctaves(this.minLimitNoiseSample, (double)xStart, (double)yStart, (double)zStart, xSamples, ySamples, zSamples, horCoordScale, vertCoordScale, horCoordScale);
-            this.maxLimitNoiseSample = this.maxLimitNoise.generateNoiseOctaves(this.maxLimitNoiseSample, (double)xStart, (double)yStart, (double)zStart, xSamples, ySamples, zSamples, horCoordScale, vertCoordScale, horCoordScale);
+            scaleNoiseSample = scaleNoise.generateNoiseOctaves(scaleNoiseSample, xStart, yStart, zStart, xSamples, 1, zSamples, 1.0D, 0.0D, 1.0D);
+            depthNoiseSample = depthNoise.generateNoiseOctaves(depthNoiseSample, xStart, yStart, zStart, xSamples, 1, zSamples, 100.0D, 0.0D, 100.0D);
+            mainNoiseSample = mainNoise.generateNoiseOctaves(mainNoiseSample, xStart, yStart, zStart, xSamples, ySamples, zSamples, horCoordScale / 80.0D, vertCoordScale / 160.0D, horCoordScale / 80.0D);
+            minLimitNoiseSample = minLimitNoise.generateNoiseOctaves(minLimitNoiseSample, xStart, yStart, zStart, xSamples, ySamples, zSamples, horCoordScale, vertCoordScale, horCoordScale);
+            maxLimitNoiseSample = maxLimitNoise.generateNoiseOctaves(maxLimitNoiseSample, xStart, yStart, zStart, xSamples, ySamples, zSamples, horCoordScale, vertCoordScale, horCoordScale);
             int index = 0;
             int scaleDepthIndex = 0;
 
@@ -316,14 +423,14 @@ namespace MCGalaxy
             {
                 for (int z = 0; z < zSamples; ++z)
                 {
-                    double scale = (this.scaleNoiseSample[scaleDepthIndex] + 256.0D) / 512.0D;
+                    double scale = (scaleNoiseSample[scaleDepthIndex] + 256.0D) / 512.0D;
                     if (scale > 1.0D)
                     {
                         scale = 1.0D;
                     }
 
                     double d18 = 0.0D;
-                    double depth = this.depthNoiseSample[scaleDepthIndex] / 8000.0D;
+                    double depth = depthNoiseSample[scaleDepthIndex] / 8000.0D;
                     if (depth < 0.0D)
                     {
                         depth = -depth;
@@ -353,22 +460,22 @@ namespace MCGalaxy
                     }
 
                     scale += 0.5D;
-                    depth = depth * (double)ySamples / 16.0D;
-                    double d22 = (double)ySamples / 2.0D + depth * 4.0D;
+                    depth = depth * ySamples / 16.0D;
+                    double d22 = ySamples / 2.0D + depth * 4.0D;
                     ++scaleDepthIndex;
 
                     for (int y = 0; y < ySamples; ++y)
                     {
                         double density = 0.0D;
-                        double offset = ((double)y - d22) * 12.0D / scale;
+                        double offset = (y - d22) * 12.0D / scale;
                         if (offset < 0.0D)
                         {
                             offset *= 4.0D;
                         }
 
-                        double min = this.minLimitNoiseSample[index] / 512.0D;
-                        double max = this.maxLimitNoiseSample[index] / 512.0D;
-                        double main = (this.mainNoiseSample[index] / 10.0D + 1.0D) / 2.0D;
+                        double min = minLimitNoiseSample[index] / 512.0D;
+                        double max = maxLimitNoiseSample[index] / 512.0D;
+                        double main = (mainNoiseSample[index] / 10.0D + 1.0D) / 2.0D;
                         if (main < 0.0D)
                         {
                             density = min;
@@ -390,9 +497,9 @@ namespace MCGalaxy
                             density = density * (1.0D - d35) + -10.0D * d35;
                         }
 
-                        if ((double)y < d18)
+                        if (y < d18)
                         {
-                            d35 = (d18 - (double)y) / 4.0D;
+                            d35 = (d18 - y) / 4.0D;
                             if (d35 < 0.0D)
                             {
                                 d35 = 0.0D;
@@ -424,10 +531,10 @@ namespace MCGalaxy
 
             int i4 = chunkX * 16;
             int i5 = chunkZ * 16;
-            this.rand.SetSeed(this.worldObj.seed);
-            long j6 = this.rand.NextLong() / 2L * 2L + 1L;
-            long j8 = this.rand.NextLong() / 2L * 2L + 1L;
-            this.rand.SetSeed((long)chunkX * j6 + (long)chunkZ * j8 ^ this.worldObj.seed);
+            rand.SetSeed(worldObj.genArgs.LongSeed);
+            long j6 = rand.NextLong() / 2L * 2L + 1L;
+            long j8 = rand.NextLong() / 2L * 2L + 1L;
+            rand.SetSeed((chunkX + worldObj.genArgs.xChunkOffset) * j6 + (chunkZ + worldObj.genArgs.zChunkOffset) * j8 ^ worldObj.genArgs.LongSeed);
             double d10 = 0.25D;
 
             int i12;
@@ -437,52 +544,52 @@ namespace MCGalaxy
 
             for (i12 = 0; i12 < 20; ++i12)
             {
-                i13 = i4 + this.rand.NextInt(16);
-                i14 = this.rand.NextInt(worldObj.wHeight);
-                i15 = i5 + this.rand.NextInt(16);
-                (new WorldGenMinable(Block.Dirt, 32)).generate(this.worldObj, this.rand, i13, i14, i15);
+                i13 = i4 + rand.NextInt(16);
+                i14 = rand.NextInt(worldObj.wHeight);
+                i15 = i5 + rand.NextInt(16);
+                new WorldGenMinable(Block.Dirt, 32).generate(worldObj, rand, i13, i14, i15);
             }
 
             for (i12 = 0; i12 < 10; ++i12)
             {
-                i13 = i4 + this.rand.NextInt(16);
-                i14 = this.rand.NextInt(worldObj.wHeight);
-                i15 = i5 + this.rand.NextInt(16);
-                (new WorldGenMinable(Block.Gravel, 32)).generate(this.worldObj, this.rand, i13, i14, i15);
+                i13 = i4 + rand.NextInt(16);
+                i14 = rand.NextInt(worldObj.wHeight);
+                i15 = i5 + rand.NextInt(16);
+                new WorldGenMinable(Block.Gravel, 32).generate(worldObj, rand, i13, i14, i15);
             }
 
             for (i12 = 0; i12 < 20; ++i12)
             {
-                i13 = i4 + this.rand.NextInt(16);
-                i14 = this.rand.NextInt(worldObj.wHeight);
-                i15 = i5 + this.rand.NextInt(16);
-                (new WorldGenMinable(Block.CoalOre, 16)).generate(this.worldObj, this.rand, i13, i14, i15);
+                i13 = i4 + rand.NextInt(16);
+                i14 = rand.NextInt(worldObj.wHeight);
+                i15 = i5 + rand.NextInt(16);
+                new WorldGenMinable(Block.CoalOre, 16).generate(worldObj, rand, i13, i14, i15);
             }
 
             for (i12 = 0; i12 < 20; ++i12)
             {
-                i13 = i4 + this.rand.NextInt(16);
-                i14 = this.rand.NextInt(64);
-                i15 = i5 + this.rand.NextInt(16);
-                (new WorldGenMinable(Block.CoalOre, 8)).generate(this.worldObj, this.rand, i13, i14, i15);
+                i13 = i4 + rand.NextInt(16);
+                i14 = rand.NextInt(worldObj.wHeight / 2);
+                i15 = i5 + rand.NextInt(16);
+                new WorldGenMinable(Block.CoalOre, 8).generate(worldObj, rand, i13, i14, i15);
             }
 
             for (i12 = 0; i12 < 2; ++i12)
             {
-                i13 = i4 + this.rand.NextInt(16);
-                i14 = this.rand.NextInt(32);
-                i15 = i5 + this.rand.NextInt(16);
-                (new WorldGenMinable(Block.GoldOre, 8)).generate(this.worldObj, this.rand, i13, i14, i15);
+                i13 = i4 + rand.NextInt(16);
+                i14 = rand.NextInt(worldObj.wHeight / 4);
+                i15 = i5 + rand.NextInt(16);
+                new WorldGenMinable(Block.GoldOre, 8).generate(worldObj, rand, i13, i14, i15);
             }
 
             d10 = 0.5D;
-            i12 = (int)((this.treeDensityNoise.generateNoise((double)i4 * d10, (double)i5 * d10) / 8.0D + this.rand.NextDouble() * 4.0D + 4.0D) / 3.0D);
+            i12 = (int)((treeDensityNoise.generateNoise(i4 * d10, i5 * d10) / 8.0D + rand.NextDouble() * 4.0D + 4.0D) / 3.0D);
             if (i12 < 0)
             {
                 i12 = 0;
             }
 
-            if (this.rand.NextInt(10) == 0)
+            if (rand.NextInt(10) == 0)
             {
                 ++i12;
             }
@@ -503,44 +610,44 @@ namespace MCGalaxy
             {
                 for (i14 = 0; i14 < i12; ++i14)
                 {
-                    i15 = i4 + this.rand.NextInt(16) + 8;
-                    i16 = i5 + this.rand.NextInt(16) + 8;
+                    i15 = i4 + rand.NextInt(16) + 8;
+                    i16 = i5 + rand.NextInt(16) + 8;
                     object18.setScale(1.0D, 1.0D, 1.0D);
-                    object18.generate(this.worldObj, this.rand, i15, this.worldObj.GetHeightValue(i15, i16), i16);
+                    object18.generate(worldObj, rand, i15, worldObj.GetHeightValue(i15, i16), i16);
                 }
             }
 
             int i17;
             for (i14 = 0; i14 < 2; ++i14)
             {
-                i15 = i4 + this.rand.NextInt(16) + 8;
-                i16 = this.rand.NextInt(worldObj.wHeight);
-                i17 = i5 + this.rand.NextInt(16) + 8;
-                (new WorldGenFlowers(Block.Dandelion)).generate(this.worldObj, this.rand, i15, i16, i17);
+                i15 = i4 + rand.NextInt(16) + 8;
+                i16 = rand.NextInt(worldObj.wHeight);
+                i17 = i5 + rand.NextInt(16) + 8;
+                new WorldGenFlowers(Block.Dandelion).generate(worldObj, rand, i15, i16, i17);
             }
 
-            if (this.rand.NextInt(2) == 0)
+            if (rand.NextInt(2) == 0)
             {
-                i14 = i4 + this.rand.NextInt(16) + 8;
-                i15 = this.rand.NextInt(worldObj.wHeight);
-                i16 = i5 + this.rand.NextInt(16) + 8;
-                (new WorldGenFlowers(Block.Rose)).generate(this.worldObj, this.rand, i14, i15, i16);
+                i14 = i4 + rand.NextInt(16) + 8;
+                i15 = rand.NextInt(worldObj.wHeight);
+                i16 = i5 + rand.NextInt(16) + 8;
+                new WorldGenFlowers(Block.Rose).generate(worldObj, rand, i14, i15, i16);
             }
 
-            if (this.rand.NextInt(4) == 0)
+            if (rand.NextInt(4) == 0)
             {
-                i14 = i4 + this.rand.NextInt(16) + 8;
-                i15 = this.rand.NextInt(worldObj.wHeight);
-                i16 = i5 + this.rand.NextInt(16) + 8;
-                (new WorldGenFlowers(Block.Mushroom)).generate(this.worldObj, this.rand, i14, i15, i16);
+                i14 = i4 + rand.NextInt(16) + 8;
+                i15 = rand.NextInt(worldObj.wHeight);
+                i16 = i5 + rand.NextInt(16) + 8;
+                new WorldGenFlowers(Block.Mushroom).generate(worldObj, rand, i14, i15, i16);
             }
 
-            if (this.rand.NextInt(8) == 0)
+            if (rand.NextInt(8) == 0)
             {
-                i14 = i4 + this.rand.NextInt(16) + 8;
-                i15 = this.rand.NextInt(worldObj.wHeight);
-                i16 = i5 + this.rand.NextInt(16) + 8;
-                (new WorldGenFlowers(Block.RedMushroom)).generate(this.worldObj, this.rand, i14, i15, i16);
+                i14 = i4 + rand.NextInt(16) + 8;
+                i15 = rand.NextInt(worldObj.wHeight);
+                i16 = i5 + rand.NextInt(16) + 8;
+                new WorldGenFlowers(Block.RedMushroom).generate(worldObj, rand, i14, i15, i16);
             }
         }
     }
@@ -553,20 +660,20 @@ namespace MCGalaxy
 
         public void generate(GenWorld world, int chunkX, int chunkZ, ref byte[] chunkData)
         {
-            int i6 = this.range;
-            this.worldObj = world;
-            this.rand.SetSeed(world.seed);
-            long j7 = this.rand.NextLong();
-            long j9 = this.rand.NextLong();
+            int i6 = range;
+            worldObj = world;
+            rand.SetSeed(world.genArgs.LongSeed);
+            long j7 = rand.NextLong();
+            long j9 = rand.NextLong();
 
             for (int i11 = chunkX - i6; i11 <= chunkX + i6; ++i11)
             {
                 for (int i12 = chunkZ - i6; i12 <= chunkZ + i6; ++i12)
                 {
-                    long j13 = (long)i11 * j7;
-                    long j15 = (long)i12 * j9;
-                    this.rand.SetSeed(j13 ^ j15 ^ world.seed);
-                    this.recursiveGenerate(world, i11, i12, chunkX, chunkZ, ref chunkData);
+                    long j13 = i11 * j7;
+                    long j15 = i12 * j9;
+                    rand.SetSeed(j13 ^ j15 ^ world.genArgs.LongSeed);
+                    recursiveGenerate(world, i11, i12, chunkX, chunkZ, ref chunkData);
                 }
             }
 
@@ -581,19 +688,19 @@ namespace MCGalaxy
     {
         protected void generateLargeCaveNode(long randomSeed, int originalX, int originalZ, byte[] chunkData, double posX, double posY, double posZ)
         {
-            this.generateCaveNode(randomSeed, originalX, originalZ, chunkData, posX, posY, posZ, 1.0F + this.rand.NextFloat() * 6.0F, 0.0F, 0.0F, -1, -1, 0.5D);
+            generateCaveNode(randomSeed, originalX, originalZ, chunkData, posX, posY, posZ, 1.0F + rand.NextFloat() * 6.0F, 0.0F, 0.0F, -1, -1, 0.5D);
         }
 
         protected void generateCaveNode(long randomSeed, int originalX, int originalZ, byte[] chunkData, double posX, double posY, double posZ, float f12, float f13, float f14, int i15, int i16, double d17)
         {
-            double d19 = (double)(originalX * 16 + 8);
-            double d21 = (double)(originalZ * 16 + 8);
+            double d19 = originalX * 16 + 8;
+            double d21 = originalZ * 16 + 8;
             float f23 = 0.0F;
             float f24 = 0.0F;
             JavaRandom random25 = new JavaRandom(randomSeed);
             if (i16 <= 0)
             {
-                int i26 = this.range * 16 - 16;
+                int i26 = range * 16 - 16;
                 i16 = i26 - random25.NextInt(i26 / 4);
             }
 
@@ -608,7 +715,7 @@ namespace MCGalaxy
 
             for (bool z28 = random25.NextInt(6) == 0; i15 < i16; ++i15)
             {
-                double d29 = 1.5D + (double)(MathHelper.sin((float)i15 * (float)Math.PI / (float)i16) * f12 * 1.0F);
+                double d29 = 1.5D + (double)(MathHelper.sin(i15 * (float)Math.PI / i16) * f12 * 1.0F);
                 double d31 = d29 * d17;
                 float f33 = MathHelper.cos(f14);
                 float f34 = MathHelper.sin(f14);
@@ -632,8 +739,8 @@ namespace MCGalaxy
                 f23 += (random25.NextFloat() - random25.NextFloat()) * random25.NextFloat() * 4.0F;
                 if (!z54 && i15 == i27 && f12 > 1.0F && i16 > 0)
                 {
-                    this.generateCaveNode(random25.NextLong(), originalX, originalZ, chunkData, posX, posY, posZ, random25.NextFloat() * 0.5F + 0.5F, f13 - (float)Math.PI / 2F, f14 / 3.0F, i15, i16, 1.0D);
-                    this.generateCaveNode(random25.NextLong(), originalX, originalZ, chunkData, posX, posY, posZ, random25.NextFloat() * 0.5F + 0.5F, f13 + (float)Math.PI / 2F, f14 / 3.0F, i15, i16, 1.0D);
+                    generateCaveNode(random25.NextLong(), originalX, originalZ, chunkData, posX, posY, posZ, random25.NextFloat() * 0.5F + 0.5F, f13 - (float)Math.PI / 2F, f14 / 3.0F, i15, i16, 1.0D);
+                    generateCaveNode(random25.NextLong(), originalX, originalZ, chunkData, posX, posY, posZ, random25.NextFloat() * 0.5F + 0.5F, f13 + (float)Math.PI / 2F, f14 / 3.0F, i15, i16, 1.0D);
                     return;
                 }
 
@@ -641,7 +748,7 @@ namespace MCGalaxy
                 {
                     double d35 = posX - d19;
                     double d37 = posZ - d21;
-                    double d39 = (double)(i16 - i15);
+                    double d39 = i16 - i15;
                     double d41 = (double)(f12 + 2.0F + 16.0F);
                     if (d35 * d35 + d37 * d37 - d39 * d39 > d41 * d41)
                     {
@@ -719,18 +826,18 @@ namespace MCGalaxy
                         {
                             for (x = i55; x < i36; ++x)
                             {
-                                double d59 = ((double)(x + originalX * 16) + 0.5D - posX) / d29;
+                                double d59 = (x + originalX * 16 + 0.5D - posX) / d29;
 
                                 for (i45 = i57; i45 < i40; ++i45)
                                 {
-                                    double d46 = ((double)(i45 + originalZ * 16) + 0.5D - posZ) / d29;
+                                    double d46 = (i45 + originalZ * 16 + 0.5D - posZ) / d29;
                                     int i48 = i38 << 8 | i45 << 4 | x;
                                     bool z49 = false;
                                     if (d59 * d59 + d46 * d46 < 1.0D)
                                     {
                                         for (int i50 = i38 - 1; i50 >= i56; --i50)
                                         {
-                                            double d51 = ((double)i50 + 0.5D - posY) / d31;
+                                            double d51 = (i50 + 0.5D - posY) / d31;
                                             if (d51 > -0.7D && d59 * d59 + d51 * d51 + d46 * d46 < 1.0D)
                                             {
                                                 byte b53 = chunkData[i48];
@@ -743,14 +850,14 @@ namespace MCGalaxy
                                                 {
                                                     if (i50 < 10)
                                                     {
-                                                        chunkData[i48] = (byte)Block.Lava;
+                                                        chunkData[i48] = Block.Lava;
                                                     }
                                                     else
                                                     {
                                                         chunkData[i48] = 0;
                                                         if (z49 && chunkData[i48 - 256] == worldObj.theme.Ground)
                                                         {
-                                                            chunkData[i48 - 256] = (byte)worldObj.theme.Surface;
+                                                            chunkData[i48 - 256] = worldObj.theme.Surface;
                                                         }
                                                     }
                                                 }
@@ -775,35 +882,35 @@ namespace MCGalaxy
 
         protected override void recursiveGenerate(GenWorld world, int chunkX, int chunkZ, int originalX, int originalZ, ref byte[] chunkData)
         {
-            int i7 = this.rand.NextInt(this.rand.NextInt(this.rand.NextInt(40) + 1) + 1);
-            if (this.rand.NextInt(15) != 0)
+            int i7 = rand.NextInt(rand.NextInt(rand.NextInt(40) + 1) + 1);
+            if (rand.NextInt(15) != 0)
             {
                 i7 = 0;
             }
 
             for (int i8 = 0; i8 < i7; ++i8)
             {
-                double d9 = (double)(chunkX * 16 + this.rand.NextInt(16));
-                double d11 = (double)this.rand.NextInt(this.rand.NextInt(world.wHeight - 8) + 8);
-                double d13 = (double)(chunkZ * 16 + this.rand.NextInt(16));
+                double d9 = chunkX * 16 + rand.NextInt(16);
+                double d11 = rand.NextInt(rand.NextInt(world.wHeight - 8) + 8);
+                double d13 = chunkZ * 16 + rand.NextInt(16);
                 int i15 = 1;
-                if (this.rand.NextInt(4) == 0)
+                if (rand.NextInt(4) == 0)
                 {
-                    this.generateLargeCaveNode(this.rand.NextLong(), originalX, originalZ, chunkData, d9, d11, d13);
-                    i15 += this.rand.NextInt(4);
+                    generateLargeCaveNode(rand.NextLong(), originalX, originalZ, chunkData, d9, d11, d13);
+                    i15 += rand.NextInt(4);
                 }
 
                 for (int i16 = 0; i16 < i15; ++i16)
                 {
-                    float f17 = this.rand.NextFloat() * (float)Math.PI * 2.0F;
-                    float f18 = (this.rand.NextFloat() - 0.5F) * 2.0F / 8.0F;
-                    float f19 = this.rand.NextFloat() * 2.0F + this.rand.NextFloat();
-                    if (this.rand.NextInt(10) == 0)
+                    float f17 = rand.NextFloat() * (float)Math.PI * 2.0F;
+                    float f18 = (rand.NextFloat() - 0.5F) * 2.0F / 8.0F;
+                    float f19 = rand.NextFloat() * 2.0F + rand.NextFloat();
+                    if (rand.NextInt(10) == 0)
                     {
-                        f19 *= this.rand.NextFloat() * this.rand.NextFloat() * 3.0F + 1.0F;
+                        f19 *= rand.NextFloat() * rand.NextFloat() * 3.0F + 1.0F;
                     }
 
-                    this.generateCaveNode(this.rand.NextLong(), originalX, originalZ, chunkData, d9, d11, d13, f19, f17, f18, 0, 0, 1.0D);
+                    generateCaveNode(rand.NextLong(), originalX, originalZ, chunkData, d9, d11, d13, f19, f17, f18, 0, 0, 1.0D);
                 }
             }
 
@@ -828,28 +935,28 @@ namespace MCGalaxy
 
         public WorldGenMinable(int i1, int i2)
         {
-            this.minableBlockId = i1;
-            this.numberOfBlocks = i2;
+            minableBlockId = i1;
+            numberOfBlocks = i2;
         }
 
         public override bool generate(GenWorld world1, JavaRandom random2, int i3, int i4, int i5)
         {
             float f6 = random2.NextFloat() * (float)Math.PI;
-            double d7 = (double)((float)(i3 + 8) + MathHelper.sin(f6) * (float)this.numberOfBlocks / 8.0F);
-            double d9 = (double)((float)(i3 + 8) - MathHelper.sin(f6) * (float)this.numberOfBlocks / 8.0F);
-            double d11 = (double)((float)(i5 + 8) + MathHelper.cos(f6) * (float)this.numberOfBlocks / 8.0F);
-            double d13 = (double)((float)(i5 + 8) - MathHelper.cos(f6) * (float)this.numberOfBlocks / 8.0F);
-            double d15 = (double)(i4 + random2.NextInt(3) + 2);
-            double d17 = (double)(i4 + random2.NextInt(3) + 2);
+            double d7 = (double)(i3 + 8 + MathHelper.sin(f6) * numberOfBlocks / 8.0F);
+            double d9 = (double)(i3 + 8 - MathHelper.sin(f6) * numberOfBlocks / 8.0F);
+            double d11 = (double)(i5 + 8 + MathHelper.cos(f6) * numberOfBlocks / 8.0F);
+            double d13 = (double)(i5 + 8 - MathHelper.cos(f6) * numberOfBlocks / 8.0F);
+            double d15 = i4 + random2.NextInt(3) + 2;
+            double d17 = i4 + random2.NextInt(3) + 2;
 
-            for (int i19 = 0; i19 <= this.numberOfBlocks; ++i19)
+            for (int i19 = 0; i19 <= numberOfBlocks; ++i19)
             {
-                double d20 = d7 + (d9 - d7) * (double)i19 / (double)this.numberOfBlocks;
-                double d22 = d15 + (d17 - d15) * (double)i19 / (double)this.numberOfBlocks;
-                double d24 = d11 + (d13 - d11) * (double)i19 / (double)this.numberOfBlocks;
-                double d26 = random2.NextDouble() * (double)this.numberOfBlocks / 16.0D;
-                double d28 = (double)(MathHelper.sin((float)i19 * (float)Math.PI / (float)this.numberOfBlocks) + 1.0F) * d26 + 1.0D;
-                double d30 = (double)(MathHelper.sin((float)i19 * (float)Math.PI / (float)this.numberOfBlocks) + 1.0F) * d26 + 1.0D;
+                double d20 = d7 + (d9 - d7) * i19 / numberOfBlocks;
+                double d22 = d15 + (d17 - d15) * i19 / numberOfBlocks;
+                double d24 = d11 + (d13 - d11) * i19 / numberOfBlocks;
+                double d26 = random2.NextDouble() * numberOfBlocks / 16.0D;
+                double d28 = (double)(MathHelper.sin(i19 * (float)Math.PI / numberOfBlocks) + 1.0F) * d26 + 1.0D;
+                double d30 = (double)(MathHelper.sin(i19 * (float)Math.PI / numberOfBlocks) + 1.0F) * d26 + 1.0D;
 
                 for (int i32 = (int)(d20 - d28 / 2.0D); i32 <= (int)(d20 + d28 / 2.0D); ++i32)
                 {
@@ -857,12 +964,12 @@ namespace MCGalaxy
                     {
                         for (int i34 = (int)(d24 - d28 / 2.0D); i34 <= (int)(d24 + d28 / 2.0D); ++i34)
                         {
-                            double d35 = ((double)i32 + 0.5D - d20) / (d28 / 2.0D);
-                            double d37 = ((double)i33 + 0.5D - d22) / (d30 / 2.0D);
-                            double d39 = ((double)i34 + 0.5D - d24) / (d28 / 2.0D);
+                            double d35 = (i32 + 0.5D - d20) / (d28 / 2.0D);
+                            double d37 = (i33 + 0.5D - d22) / (d30 / 2.0D);
+                            double d39 = (i34 + 0.5D - d24) / (d28 / 2.0D);
                             if (d35 * d35 + d37 * d37 + d39 * d39 < 1.0D && world1.GetBlock(i32, i33, i34) == world1.theme.Cliff)
                             {
-                                world1.SetBlock(i32, i33, i34, this.minableBlockId);
+                                world1.SetBlock(i32, i33, i34, minableBlockId);
                             }
                         }
                     }
@@ -879,7 +986,7 @@ namespace MCGalaxy
 
         public WorldGenFlowers(int i1)
         {
-            this.plantBlockId = i1;
+            plantBlockId = i1;
         }
 
         public override bool generate(GenWorld world1, JavaRandom random2, int i3, int i4, int i5)
@@ -893,7 +1000,7 @@ namespace MCGalaxy
                 int block = world1.GetBlock(i7, i8 - 1, i9);
                 if (world1.GetBlock(i7, i8, i9) == Block.Air && (block == world1.theme.Surface || block == world1.theme.Ground))
                 {
-                    world1.SetBlock(i7, i8, i9, this.plantBlockId);
+                    world1.SetBlock(i7, i8, i9, plantBlockId);
                 }
             }
 
@@ -1050,11 +1157,11 @@ namespace MCGalaxy
         public NoiseGeneratorOctaves(JavaRandom random, int octaves)
         {
             this.octaves = octaves;
-            this.generatorCollection = new NoiseGeneratorPerlin[octaves];
+            generatorCollection = new NoiseGeneratorPerlin[octaves];
 
             for (int i3 = 0; i3 < octaves; ++i3)
             {
-                this.generatorCollection[i3] = new NoiseGeneratorPerlin(random);
+                generatorCollection[i3] = new NoiseGeneratorPerlin(random);
             }
 
         }
@@ -1064,9 +1171,9 @@ namespace MCGalaxy
             double var7 = 0.0D;
             double var9 = 1.0D;
 
-            for (int var11 = 0; var11 < this.octaves; ++var11)
+            for (int var11 = 0; var11 < octaves; ++var11)
             {
-                var7 += this.generatorCollection[var11].generateNoise(var1 * var9, var5 * var9) / var9;
+                var7 += generatorCollection[var11].generateNoise(var1 * var9, var5 * var9) / var9;
                 var9 /= 2.0D;
             }
 
@@ -1078,9 +1185,9 @@ namespace MCGalaxy
             double var7 = 0.0D;
             double var9 = 1.0D;
 
-            for (int var11 = 0; var11 < this.octaves; ++var11)
+            for (int var11 = 0; var11 < octaves; ++var11)
             {
-                var7 += this.generatorCollection[var11].generateNoise(var1 * var9, var3 * var9, var5 * var9) / var9;
+                var7 += generatorCollection[var11].generateNoise(var1 * var9, var3 * var9, var5 * var9) / var9;
                 var9 /= 2.0D;
             }
 
@@ -1103,9 +1210,9 @@ namespace MCGalaxy
 
             double d20 = 1.0D;
 
-            for (int i19 = 0; i19 < this.octaves; ++i19)
+            for (int i19 = 0; i19 < octaves; ++i19)
             {
-                this.generatorCollection[i19].populateNoiseArray(d1, d2, d4, d6, i8, i9, i10, d11 * d20, d13 * d20, d15 * d20, d20);
+                generatorCollection[i19].populateNoiseArray(d1, d2, d4, d6, i8, i9, i10, d11 * d20, d13 * d20, d15 * d20, d20);
                 d20 /= 2.0D;
             }
 
@@ -1123,51 +1230,51 @@ namespace MCGalaxy
 
         public NoiseGeneratorPerlin(JavaRandom random)
         {
-            this.permutations = new int[512];
-            this.xCoord = random.NextDouble() * 256.0D;
-            this.yCoord = random.NextDouble() * 256.0D;
-            this.zCoord = random.NextDouble() * 256.0D;
+            permutations = new int[512];
+            xCoord = random.NextDouble() * 256.0D;
+            yCoord = random.NextDouble() * 256.0D;
+            zCoord = random.NextDouble() * 256.0D;
 
             int i2;
-            for (i2 = 0; i2 < 256; this.permutations[i2] = i2++)
+            for (i2 = 0; i2 < 256; permutations[i2] = i2++)
             {
             }
 
             for (i2 = 0; i2 < 256; ++i2)
             {
                 int i3 = random.NextInt(256 - i2) + i2;
-                int i4 = this.permutations[i2];
-                this.permutations[i2] = this.permutations[i3];
-                this.permutations[i3] = i4;
-                this.permutations[i2 + 256] = this.permutations[i2];
+                int i4 = permutations[i2];
+                permutations[i2] = permutations[i3];
+                permutations[i3] = i4;
+                permutations[i2 + 256] = permutations[i2];
             }
 
         }
 
         public double generateNoise(double var1, double var3)
         {
-            return this.generateNoise(var1, var3, 0.0D);
+            return generateNoise(var1, var3, 0.0D);
         }
 
         public double generateNoise(double d1, double d3, double d5)
         {
-            double d7 = d1 + this.xCoord;
-            double d9 = d3 + this.yCoord;
-            double d11 = d5 + this.zCoord;
+            double d7 = d1 + xCoord;
+            double d9 = d3 + yCoord;
+            double d11 = d5 + zCoord;
             int i13 = (int)d7;
             int i14 = (int)d9;
             int i15 = (int)d11;
-            if (d7 < (double)i13)
+            if (d7 < i13)
             {
                 --i13;
             }
 
-            if (d9 < (double)i14)
+            if (d9 < i14)
             {
                 --i14;
             }
 
-            if (d11 < (double)i15)
+            if (d11 < i15)
             {
                 --i15;
             }
@@ -1175,19 +1282,19 @@ namespace MCGalaxy
             int i16 = i13 & 255;
             int i17 = i14 & 255;
             int i18 = i15 & 255;
-            d7 -= (double)i13;
-            d9 -= (double)i14;
-            d11 -= (double)i15;
+            d7 -= i13;
+            d9 -= i14;
+            d11 -= i15;
             double d19 = d7 * d7 * d7 * (d7 * (d7 * 6.0D - 15.0D) + 10.0D);
             double d21 = d9 * d9 * d9 * (d9 * (d9 * 6.0D - 15.0D) + 10.0D);
             double d23 = d11 * d11 * d11 * (d11 * (d11 * 6.0D - 15.0D) + 10.0D);
-            int i25 = this.permutations[i16] + i17;
-            int i26 = this.permutations[i25] + i18;
-            int i27 = this.permutations[i25 + 1] + i18;
-            int i28 = this.permutations[i16 + 1] + i17;
-            int i29 = this.permutations[i28] + i18;
-            int i30 = this.permutations[i28 + 1] + i18;
-            return this.lerp(d23, this.lerp(d21, this.lerp(d19, this.grad(this.permutations[i26], d7, d9, d11), this.grad(this.permutations[i29], d7 - 1.0D, d9, d11)), this.lerp(d19, this.grad(this.permutations[i27], d7, d9 - 1.0D, d11), this.grad(this.permutations[i30], d7 - 1.0D, d9 - 1.0D, d11))), this.lerp(d21, this.lerp(d19, this.grad(this.permutations[i26 + 1], d7, d9, d11 - 1.0D), this.grad(this.permutations[i29 + 1], d7 - 1.0D, d9, d11 - 1.0D)), this.lerp(d19, this.grad(this.permutations[i27 + 1], d7, d9 - 1.0D, d11 - 1.0D), this.grad(this.permutations[i30 + 1], d7 - 1.0D, d9 - 1.0D, d11 - 1.0D))));
+            int i25 = permutations[i16] + i17;
+            int i26 = permutations[i25] + i18;
+            int i27 = permutations[i25 + 1] + i18;
+            int i28 = permutations[i16 + 1] + i17;
+            int i29 = permutations[i28] + i18;
+            int i30 = permutations[i28 + 1] + i18;
+            return lerp(d23, lerp(d21, lerp(d19, grad(permutations[i26], d7, d9, d11), grad(permutations[i29], d7 - 1.0D, d9, d11)), lerp(d19, grad(permutations[i27], d7, d9 - 1.0D, d11), grad(permutations[i30], d7 - 1.0D, d9 - 1.0D, d11))), lerp(d21, lerp(d19, grad(permutations[i26 + 1], d7, d9, d11 - 1.0D), grad(permutations[i29 + 1], d7 - 1.0D, d9, d11 - 1.0D)), lerp(d19, grad(permutations[i27 + 1], d7, d9 - 1.0D, d11 - 1.0D), grad(permutations[i30 + 1], d7 - 1.0D, d9 - 1.0D, d11 - 1.0D))));
         }
 
         public double lerp(double d1, double d3, double d5)
@@ -1203,14 +1310,6 @@ namespace MCGalaxy
             return ((i8 & 1) == 0 ? d9 : -d9) + ((i8 & 2) == 0 ? d11 : -d11);
         }
 
-        public double a(int i, double d, double d1)
-        {
-            int j = i & 0xF;
-            double d2 = (double)(1 - ((j & 8) >> 3)) * d;
-            double d3 = j >= 4 ? (j != 12 && j != 14 ? d1 : d) : 0.0;
-            return ((j & 1) != 0 ? -d2 : d2) + ((j & 2) != 0 ? -d3 : d3);
-        }
-
         public void populateNoiseArray(double[] ad, double d, double d1, double d2, int i, int j, int k, double d3, double d4, double d5, double d6)
         {
             int i1 = 0;
@@ -1222,51 +1321,51 @@ namespace MCGalaxy
             double d18 = 0.0;
             for (int i5 = 0; i5 < i; ++i5)
             {
-                double d20 = (d + (double)i5) * d3 + this.xCoord;
-                long k5 = (long)d20;
-                if (d20 < (double)k5)
+                double d20 = (d + i5) * d3 + xCoord;
+                int k5 = (int)d20;
+                if (d20 < k5)
                 {
                     --k5;
                 }
-                int i6 = (int)(k5 & 0xFFL);
-                double d22 = (d20 -= (double)k5) * d20 * d20 * (d20 * (d20 * 6.0 - 15.0) + 10.0);
+                int i6 = k5 & 0xFF;
+                double d22 = (d20 -= k5) * d20 * d20 * (d20 * (d20 * 6.0 - 15.0) + 10.0);
                 for (int j6 = 0; j6 < k; ++j6)
                 {
-                    double d24 = (d2 + (double)j6) * d5 + this.zCoord;
-                    long k6 = (long)d24;
-                    if (d24 < (double)k6)
+                    double d24 = (d2 + j6) * d5 + zCoord;
+                    int k6 = (int)d24;
+                    if (d24 < k6)
                     {
                         --k6;
                     }
                     int l6 = (int)(k6 & 0xFFL);
-                    double d25 = (d24 -= (double)k6) * d24 * d24 * (d24 * (d24 * 6.0 - 15.0) + 10.0);
+                    double d25 = (d24 -= k6) * d24 * d24 * (d24 * (d24 * 6.0 - 15.0) + 10.0);
                     for (int i7 = 0; i7 < j; ++i7)
                     {
-                        double d26 = (d1 + (double)i7) * d4 + this.yCoord;
+                        double d26 = (d1 + i7) * d4 + yCoord;
                         int j7 = (int)d26;
-                        if (d26 < (double)j7)
+                        if (d26 < j7)
                         {
                             --j7;
                         }
                         int k7 = j7 & 0xFF;
-                        double d27 = (d26 -= (double)j7) * d26 * d26 * (d26 * (d26 * 6.0 - 15.0) + 10.0);
+                        double d27 = (d26 -= j7) * d26 * d26 * (d26 * (d26 * 6.0 - 15.0) + 10.0);
                         if (i7 == 0 || k7 != i2)
                         {
                             i2 = k7;
-                            int j2 = this.permutations[i6] + k7;
-                            int k2 = this.permutations[j2] + l6;
-                            int l2 = this.permutations[j2 + 1] + l6;
-                            int i3 = this.permutations[i6 + 1] + k7;
-                            int k3 = this.permutations[i3] + l6;
-                            int l3 = this.permutations[i3 + 1] + l6;
-                            d13 = this.lerp(d22, this.grad(this.permutations[k2], d20, d26, d24), this.grad(this.permutations[k3], d20 - 1.0, d26, d24));
-                            d15 = this.lerp(d22, this.grad(this.permutations[l2], d20, d26 - 1.0, d24), this.grad(this.permutations[l3], d20 - 1.0, d26 - 1.0, d24));
-                            d16 = this.lerp(d22, this.grad(this.permutations[k2 + 1], d20, d26, d24 - 1.0), this.grad(this.permutations[k3 + 1], d20 - 1.0, d26, d24 - 1.0));
-                            d18 = this.lerp(d22, this.grad(this.permutations[l2 + 1], d20, d26 - 1.0, d24 - 1.0), this.grad(this.permutations[l3 + 1], d20 - 1.0, d26 - 1.0, d24 - 1.0));
+                            int j2 = permutations[i6] + k7;
+                            int k2 = permutations[j2] + l6;
+                            int l2 = permutations[j2 + 1] + l6;
+                            int i3 = permutations[i6 + 1] + k7;
+                            int k3 = permutations[i3] + l6;
+                            int l3 = permutations[i3 + 1] + l6;
+                            d13 = lerp(d22, grad(permutations[k2], d20, d26, d24), grad(permutations[k3], d20 - 1.0, d26, d24));
+                            d15 = lerp(d22, grad(permutations[l2], d20, d26 - 1.0, d24), grad(permutations[l3], d20 - 1.0, d26 - 1.0, d24));
+                            d16 = lerp(d22, grad(permutations[k2 + 1], d20, d26, d24 - 1.0), grad(permutations[k3 + 1], d20 - 1.0, d26, d24 - 1.0));
+                            d18 = lerp(d22, grad(permutations[l2 + 1], d20, d26 - 1.0, d24 - 1.0), grad(permutations[l3 + 1], d20 - 1.0, d26 - 1.0, d24 - 1.0));
                         }
-                        double d28 = this.lerp(d27, d13, d15);
-                        double d29 = this.lerp(d27, d16, d18);
-                        double d30 = this.lerp(d25, d28, d29);
+                        double d28 = lerp(d27, d13, d15);
+                        double d29 = lerp(d27, d16, d18);
+                        double d30 = lerp(d25, d28, d29);
                         int n = i1++;
                         ad[n] = ad[n] + d30 * d7;
                     }
@@ -1290,9 +1389,9 @@ namespace MCGalaxy
             this.z = z;
 
             this.blocks = blocks;
-            this.heightMap = new int[256];
+            heightMap = new int[256];
 
-            if (blocks != null) this.GenerateHeightMap();
+            if (blocks != null) GenerateHeightMap();
         }
 
         public void SetBlock(int x, int y, int z, int block)
@@ -1319,12 +1418,12 @@ namespace MCGalaxy
                     int id;
                     do
                     {
-                        id = this.blocks[(i4 - 1) << 8 | i5];
+                        id = blocks[(i4 - 1) << 8 | i5];
                         i4--;
                     }
                     while (i4 > 0 && world.mcgLevel.LightPasses((ushort)id));
 
-                    this.heightMap[i5] = i4;
+                    heightMap[i5] = i4;
                     if (i4 < i1)
                     {
                         i1 = i4;
@@ -1338,7 +1437,7 @@ namespace MCGalaxy
 
         public int GetHeightValue(int x, int z)
         {
-            return this.heightMap[z << 4 | x];
+            return heightMap[z << 4 | x];
         }
     }
 
@@ -1347,17 +1446,17 @@ namespace MCGalaxy
         public int xChTotal, zChTotal, wHeight;
         public MapGenBiome theme;
         public GenChunk[] chunks;
-        public long seed;
+        public MapGenArgsHack.GenArgs genArgs;
         public Level mcgLevel;
         public ChunkBasedOctaveGenerator chunkGenerator { private get; set; }
 
-        public GenWorld(int xChTotal, int zChTotal, int wHeight, MapGenBiome theme, long seed, Level mcgLevel)
+        public GenWorld(int xChTotal, int zChTotal, int wHeight, MapGenBiome theme, MapGenArgsHack.GenArgs genArgs, Level mcgLevel)
         {
             this.xChTotal = xChTotal;
             this.zChTotal = zChTotal;
             this.wHeight = wHeight;
             this.theme = theme;
-            this.seed = seed;
+            this.genArgs = genArgs;
             this.mcgLevel = mcgLevel;
 
             chunks = new GenChunk[xChTotal * zChTotal];
@@ -1365,22 +1464,22 @@ namespace MCGalaxy
 
         public void PopulateChunk(int x, int z)
         {
-            if (!this.chunks[(x * zChTotal) + z].isTerrainPopulated && this.ChunkExists(x + 1, z + 1) && ChunkExists(x, z + 1) && ChunkExists(x + 1, z))
+            if (!chunks[(x * zChTotal) + z].isTerrainPopulated && ChunkExists(x + 1, z + 1) && ChunkExists(x, z + 1) && ChunkExists(x + 1, z))
             {
                 chunkGenerator.Populate(x, z);
             }
 
-            if (ChunkExists(x - 1, z) && !GetChunkFromChunkCoords(x - 1, z).isTerrainPopulated && ChunkExists(x - 1, z + 1) && ChunkExists(x, z + 1) && this.ChunkExists(x - 1, z))
+            if (ChunkExists(x - 1, z) && !GetChunkFromChunkCoords(x - 1, z).isTerrainPopulated && ChunkExists(x - 1, z + 1) && ChunkExists(x, z + 1) && ChunkExists(x - 1, z))
             {
                 chunkGenerator.Populate(x - 1, z);
             }
 
-            if (ChunkExists(x, z - 1) && !GetChunkFromChunkCoords(x, z - 1).isTerrainPopulated && ChunkExists(x + 1, z - 1) && ChunkExists(x, z - 1) && this.ChunkExists(x + 1, z))
+            if (ChunkExists(x, z - 1) && !GetChunkFromChunkCoords(x, z - 1).isTerrainPopulated && ChunkExists(x + 1, z - 1) && ChunkExists(x, z - 1) && ChunkExists(x + 1, z))
             {
                 chunkGenerator.Populate(x, z - 1);
             }
 
-            if (ChunkExists(x - 1, z - 1) && !GetChunkFromBlockCoords(x - 1, z - 1).isTerrainPopulated && ChunkExists(x - 1, z - 1) && ChunkExists(x, z - 1) && this.ChunkExists(x - 1, z))
+            if (ChunkExists(x - 1, z - 1) && !GetChunkFromBlockCoords(x - 1, z - 1).isTerrainPopulated && ChunkExists(x - 1, z - 1) && ChunkExists(x, z - 1) && ChunkExists(x - 1, z))
             {
                 chunkGenerator.Populate(x - 1, z - 1);
             }
@@ -1388,7 +1487,7 @@ namespace MCGalaxy
 
         public bool ChunkExists(int x, int z)
         {
-            return x < xChTotal && z < zChTotal && x > 0 && z > 0 && this.chunks[(x * zChTotal) + z] != null;
+            return x < xChTotal && z < zChTotal && x > 0 && z > 0 && chunks[(x * zChTotal) + z] != null;
         }
 
         public GenChunk GetChunkFromChunkCoords(int x, int z)
@@ -1399,12 +1498,12 @@ namespace MCGalaxy
             }
             else
             {
-                if (this.chunks[(x * zChTotal) + z] == null)
+                if (chunks[(x * zChTotal) + z] == null)
                 {
-                    this.chunks[(x * zChTotal) + z] = chunkGenerator.generateChunk(x, z);
-                    this.PopulateChunk(x, z);
+                    chunks[(x * zChTotal) + z] = chunkGenerator.generateChunk(x, z);
+                    PopulateChunk(x, z);
                 }
-                return this.chunks[(x * zChTotal) + z];
+                return chunks[(x * zChTotal) + z];
             }
         }
 
@@ -1419,18 +1518,18 @@ namespace MCGalaxy
             }
             else
             {
-                if (this.chunks[(cX * zChTotal) + cZ] == null)
+                if (chunks[(cX * zChTotal) + cZ] == null)
                 {
-                    this.chunks[(cX * zChTotal) + cZ] = chunkGenerator.generateChunk(cX, cZ);
-                    this.PopulateChunk(cX, cZ);
+                    chunks[(cX * zChTotal) + cZ] = chunkGenerator.generateChunk(cX, cZ);
+                    PopulateChunk(cX, cZ);
                 }
-                return this.chunks[(cX * zChTotal) + cZ];
+                return chunks[(cX * zChTotal) + cZ];
             }
         }
 
         public void SetBlock(int x, int y, int z, int block)
         {
-            GenChunk chunk = this.GetChunkFromBlockCoords(x, z);
+            GenChunk chunk = GetChunkFromBlockCoords(x, z);
 
             if (chunk == null || y >= wHeight || y < 0) return;
             chunk.SetBlock(x & 15, y, z & 15, block);
@@ -1438,7 +1537,7 @@ namespace MCGalaxy
 
         public int GetBlock(int x, int y, int z)
         {
-            GenChunk chunk = this.GetChunkFromBlockCoords(x, z);
+            GenChunk chunk = GetChunkFromBlockCoords(x, z);
 
             if (chunk == null || y >= wHeight || y < 0) return 0;
             return chunk.GetBlock(x & 15, y, z & 15);
@@ -1446,10 +1545,23 @@ namespace MCGalaxy
 
         public int GetHeightValue(int x, int z)
         {
-            GenChunk chunk = this.GetChunkFromBlockCoords(x, z);
+            GenChunk chunk = GetChunkFromBlockCoords(x, z);
 
             if (chunk == null) return 0;
             return chunk.GetHeightValue(x & 15, z & 15);
+        }
+    }
+
+    public static class Util
+    {
+        public static int JavaStringHashCode(this string str)
+        {
+            int h = 0;
+            for (int i = 0; i < str.Length; i++) 
+            {
+                h = 31 * h + str[i];
+            }
+            return h;
         }
     }
 

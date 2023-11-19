@@ -1,24 +1,18 @@
 using System;
-using System.Threading;
-using System.Collections.Generic;
-using MCGalaxy.Commands;
-using MCGalaxy.Tasks;
 
 using LibNoise;
 using MCGalaxy;
 using BlockID = System.UInt16;
 using MCGalaxy.Generator;
 using MCGalaxy.Generator.Foliage;
-using System.Security.Cryptography;
-using System.Text;
 
-namespace MCGalaxy
+namespace VeryPlugins
 {
 
     public sealed class PluginNasGen : Plugin
     {
         public override string name { get { return "PluginNasGen"; } }
-        public override string MCGalaxy_Version { get { return "1.0.1"; } }
+        public override string MCGalaxy_Version { get { return "1.9.4.8"; } }
         public override string creator { get { return "Goodly"; } }
 
 
