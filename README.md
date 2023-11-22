@@ -1,5 +1,5 @@
-# veryuninfishedserver-plugins-and-cmds
-plugins and commands for the very unfinished server, also includes forked versions of popular plugins and commands.
+# MCGalaxy-Stuff
+plugins and commands for the MCGalaxy server software, also includes forked versions of popular plugins and commands.
 
 ## CmdDecide.cs
 Command for deciding on things, originally came from The Build, but this version has different wording.
