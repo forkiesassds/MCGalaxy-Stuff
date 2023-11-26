@@ -44,8 +44,8 @@ namespace VeryPlugins
     {
         public struct GenArgs
         {
-            public bool GenCaves = true;
-            public MapGenBiomeName Biome = Server.Config.DefaultMapGenBiome;
+            public bool GenCaves;
+            public MapGenBiomeName Biome;
             public bool HasSeed;
             public long LongSeed;
             public int xChunkOffset;
