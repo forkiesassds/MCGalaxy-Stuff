@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 using MCGalaxy;
@@ -54,7 +55,12 @@ namespace VeryPlugins
             public GenArgs(object hack) //hack because that's not a thing in mono, aka anything before c# 10.0
             {
                 GenCaves = true;
-                Biome = Server.Config.DefaultMapGenBiome;
+                List<FieldInfo> properties = Server.Config.GetType().GetFields().ToList<FieldInfo>();
+                int fieldIdx = properties.FindIndex(field => field.Name == "DefaultMapGenBiome");
+                if (fieldIdx != -1)
+                    Biome = (MapGenBiomeName)properties[fieldIdx].GetValue(Server.Config);
+                else
+                    Biome = MapGenBiomeName.Forest;
             }
         }
 
