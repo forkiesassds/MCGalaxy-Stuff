@@ -51,7 +51,7 @@ namespace VeryPlugins
             public int xChunkOffset;
             public int zChunkOffset;
 
-            public GenArgs()
+            public GenArgs(object hack) //hack because that's not a thing in mono, aka anything before c# 10.0
             {
                 GenCaves = true;
                 Biome = Server.Config.DefaultMapGenBiome;
@@ -59,7 +59,7 @@ namespace VeryPlugins
         }
 
         public delegate bool GenArgSelector(Player p, string arg, ref GenArgs args);
-        public GenArgs ArgsForGen = new GenArgs();
+        public GenArgs ArgsForGen = new GenArgs(null);
 
         public new MapGenArgSelector ArgFilter = (arg) => arg.Contains("=");
         public new GenArgSelector ArgParser = (Player p, string arg, ref GenArgs args) => 
