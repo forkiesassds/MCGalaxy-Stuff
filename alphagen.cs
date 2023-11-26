@@ -1,5 +1,6 @@
 //reference System.Core.dll 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -63,6 +64,11 @@ namespace VeryPlugins
                     Biome = (MapGenBiomeName)properties[fieldIdx].GetValue(Server.Config);
                 else
                     Biome = MapGenBiomeName.Forest;
+
+                HasSeed = false;
+                LongSeed = 0;
+                xChunkOffset = 0;
+                zChunkOffset = 0;
             }
         }
 
