@@ -1,4 +1,4 @@
-//reference System.Core.dll 
+//reference System.Core.dll
 using System;
 using System.Collections.Generic;
 using System.Linq;
