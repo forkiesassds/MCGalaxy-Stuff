@@ -18,11 +18,14 @@ namespace VeryPlugins
 
         public override void Load(bool startup)
         {
-            MapGen.Register("nasGen", GenType.Advanced, NasGen.Gen, "hello?");
+            MapGen.Register("nasGen", GenType.Advanced, NasGen.Gen, MapGen.DEFAULT_HELP);
         }
         public override void Unload(bool shutdown)
         {
-
+            if (MapGen.Generators.RemoveAll(gen => gen.Theme == "nasGen") == 0)
+            {
+                Logger.Log(LogType.Warning, "Unable to un-register world type, either the world type was never registered, got removed or other causes. Restart the server to avoid issues!");
+            }
         }
     }
 

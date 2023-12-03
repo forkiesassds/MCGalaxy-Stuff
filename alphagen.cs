@@ -35,7 +35,10 @@ namespace VeryPlugins
         }
         public override void Unload(bool shutdown)
         {
-
+            if (MapGen.Generators.RemoveAll(gen => gen.Theme == "alphaGen") == 0)
+            {
+                Logger.Log(LogType.Warning, "Unable to un-register world type, either the world type was never registered, got removed or other causes. Restart the server to avoid issues!");
+            }
         }
 
         public static string LineString(string str)
