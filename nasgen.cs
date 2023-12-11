@@ -40,7 +40,7 @@ namespace VeryPlugins
         public const float goldChance = 1f / 8f;
 
         /// <summary>
-        /// Returns true if seed and offsets were succesfully found
+        /// Returns true if seed and offsets were successfully found
         /// </summary>
         public static bool GetSeedAndChunkOffset(string mapName, ref int seed, ref int chunkOffsetX, ref int chunkOffsetZ)
         {

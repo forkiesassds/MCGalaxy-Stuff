@@ -26,7 +26,7 @@ namespace VeryPlugins
                 "The map generator supports defining arguments. " + 
                 LineString("For example: \"genCaves=false,theme=Arctic,seed=Glacier\" generates a map without any caves" + 
                 ", with the Arctic theme and using the seed \"Glacier\".") +
-                LineString("The following arguments are avalible:") +
+                LineString("The following arguments are available:") +
                 LineString("genCaves (boolean): whether or not to generate caves.") +
                 LineString("theme (many values): the theme of the map.") +
                 LineString("seed (long integer or string): the seed of the map") +
@@ -165,7 +165,7 @@ namespace VeryPlugins
             ChunkBasedOctaveGenerator generator = new ChunkBasedOctaveGenerator(world, rngSeed);
             world.chunkGenerator = generator;
 
-            p.Message("Begining generation of world with seed \"" + rngSeed + "\"");
+            p.Message("Beginning generation of world with seed \"" + rngSeed + "\"");
 
             int totalChunks = width * length;
             int chunksGenerated = 1;
