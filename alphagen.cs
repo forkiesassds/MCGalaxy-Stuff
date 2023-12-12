@@ -22,9 +22,9 @@ namespace VeryPlugins
         public override void Load(bool startup)
         {
             //HACK: why do messages not support newlines???
-            MapGen.Register("alphaGen", GenType.Advanced, AlphaGen.Gen, 
-                "The map generator supports defining arguments. " + 
-                LineString("For example: \"genCaves=false,theme=Arctic,seed=Glacier\" generates a map without any caves" + 
+            MapGen.Register("alphaGen", GenType.Advanced, AlphaGen.Gen,
+                "The map generator supports defining arguments. " +
+                LineString("For example: \"genCaves=false,theme=Arctic,seed=Glacier\" generates a map without any caves" +
                 ", with the Arctic theme and using the seed \"Glacier\".") +
                 LineString("The following arguments are available:") +
                 LineString("genCaves (boolean): whether or not to generate caves.") +
@@ -46,7 +46,7 @@ namespace VeryPlugins
             return str + "".PadRight(64 - (str.Length & 63), ' ');
         }
     }
-    
+
     public class MapGenArgsHack : MapGenArgs
     {
         public struct GenArgs
@@ -79,17 +79,17 @@ namespace VeryPlugins
         public GenArgs ArgsForGen = new GenArgs(null);
 
         public new MapGenArgSelector ArgFilter = (arg) => arg.Contains("=");
-        public new GenArgSelector ArgParser = (Player p, string arg, ref GenArgs args) => 
+        public new GenArgSelector ArgParser = (Player p, string arg, ref GenArgs args) =>
         {
             string[] split = arg.Split('=');
             string key = split[0];
             string value = split.Skip(1).Join("=");
-            
+
 
             //TODO: add more options
-            switch (key) 
+            switch (key)
             {
-                case "genCaves": 
+                case "genCaves":
                     if (!bool.TryParse(value, out args.GenCaves))
                     {
                         p.Message("Value " + value + " is not a valid value for genCaves!");
@@ -124,20 +124,26 @@ namespace VeryPlugins
         };
 
 
-        public new bool ParseArgs(Player p) {
+        public new bool ParseArgs(Player p)
+        {
             foreach (string arg in Args.Split(','))
             {
                 if (arg.Length == 0) continue;
-                
-                if (ArgFilter(arg)) {
+
+                if (ArgFilter(arg))
+                {
                     if (!ArgParser(p, arg, ref ArgsForGen)) return false;
-                } else if (long.TryParse(arg, out ArgsForGen.LongSeed)) { 
+                }
+                else if (long.TryParse(arg, out ArgsForGen.LongSeed))
+                {
                     ArgsForGen.HasSeed = true;
-                } else {
+                }
+                else
+                {
                     if (!CommandParser.GetEnum(p, arg, "Seed", ref Biome)) return false;
                 }
             }
-            
+
             if (!ArgsForGen.HasSeed) ArgsForGen.LongSeed = RandomDefault ? new JavaRandom().NextLong() : -1;
             return true;
         }
@@ -1052,11 +1058,11 @@ namespace VeryPlugins
                         {
                             if (i8 >= 0 && i8 < world1.wHeight)
                             {
-                                //No idea why this code doesn't work
-                                // int i12 = world1.GetBlock(i10, i8, i11);
-                                // if(i12 != Block.Air && i12 != Block.Leaves) {
-                                // 	z7 = false;
-                                // }
+                                int i12 = world1.GetBlock(i10, i8, i11);
+                                if (i12 != Block.Air && i12 != Block.Leaves)
+                                {
+                                    z7 = false;
+                                }
                             }
                             else
                             {
@@ -1440,7 +1446,7 @@ namespace VeryPlugins
                     }
                     while (i4 > 0 && world.mcgLevel.LightPasses((ushort)id));
 
-                    heightMap[i5] = i4;
+                    heightMap[i5] = i4 + 1; //FIXME: this is probably not how it should be.
                     if (i4 < i1)
                     {
                         i1 = i4;
@@ -1574,7 +1580,7 @@ namespace VeryPlugins
         public static int JavaStringHashCode(this string str)
         {
             int h = 0;
-            for (int i = 0; i < str.Length; i++) 
+            for (int i = 0; i < str.Length; i++)
             {
                 h = 31 * h + str[i];
             }
