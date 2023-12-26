@@ -1,23 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using MCGalaxy.Commands;
 using MCGalaxy.Commands.Fun;
-using MCGalaxy.Commands.World;
-using MCGalaxy.Config;
-using MCGalaxy.Games;
 using MCGalaxy.Generator;
-using MCGalaxy.Events;
-using MCGalaxy.Events.LevelEvents;
 using MCGalaxy.Events.PlayerEvents;
-using MCGalaxy.Maths;
 using MCGalaxy.Network;
 using BlockID = System.UInt16;
 
 namespace MCGalaxy.Games {
     public sealed class SpleefPlugin : Plugin {
 		public override string creator { get { return "icanttellyou"; } }
-		public override string MCGalaxy_Version { get { return "1.9.3.5"; } }
+		public override string MCGalaxy_Version { get { return "1.9.4.6"; } }
 		public override string name { get { return "Spleef"; } }
 		
 		Command cmd;
@@ -83,8 +76,7 @@ namespace MCGalaxy.Games {
 	public sealed class SpleefConfig : RoundsGameConfig {
         public override bool AllowAutoload { get { return true; } }
         protected override string GameName { get { return "Spleef"; } }
-        protected override string PropsPath { get { return "./plugins/spleef.properties"; } }
-        
+
         public override void Load() {
             base.Load();
             if (Maps.Count == 0) Maps.Add("spleef");
@@ -92,18 +84,23 @@ namespace MCGalaxy.Games {
     }
 	
     public sealed partial class SpleefGame : RoundsGame {
-	//game
-	public VolatileArray<Player> Players = new VolatileArray<Player>();
+	    //game
+	    public VolatileArray<Player> Players = new VolatileArray<Player>();
         public VolatileArray<Player> Remaining = new VolatileArray<Player>();
         
         public static SpleefConfig Config = new SpleefConfig();
         public override string GameName { get { return "Spleef"; } }
         public override RoundsGameConfig GetConfig() { return Config; }
+
+        protected override string WelcomeMessage { get { return "&dSpleef &Sis running! Type &T/Spl join &Sto join!"; } }
         
         public int Interval;
         
         public static SpleefGame Instance = new SpleefGame();
-        public SpleefGame() { Picker = new LevelPicker(); }
+        public SpleefGame() { 
+            Config.Path = "./plugins/spleef.properties";
+            Picker = new LevelPicker(); 
+        }
         
         public override void UpdateMapConfig() { }
         
