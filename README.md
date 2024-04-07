@@ -17,3 +17,5 @@ A NA2 like version of /8ball
 A port of Supernova's spleef for MCGalaxy.
 ## alphagen.cs
 A port of Minecraft Alpha's terrain generator.
+## Rainbow.cs
+Improved version of the rainbow text plugin. The plugin uses color code r for rainbow text.
