@@ -49,36 +49,30 @@ namespace VeryPlugins
 
     public class MapGenArgsHack : MapGenArgs
     {
-        public struct GenArgs
+        public class GenArgs
         {
-            public bool GenCaves;
+            public bool GenCaves = true;
             public MapGenBiomeName Biome;
-            public bool HasSeed;
-            public long LongSeed;
-            public int xChunkOffset;
-            public int zChunkOffset;
+            public bool HasSeed = false;
+            public long LongSeed = 0;
+            public int xChunkOffset = 0;
+            public int zChunkOffset = 0;
 
-            public GenArgs(object hack) //hack because that's not a thing in mono, aka anything before c# 10.0
+            public GenArgs()
             {
-                GenCaves = true;
-                List<FieldInfo> properties = Server.Config.GetType().GetFields().ToList<FieldInfo>();
+                List<FieldInfo> properties = Server.Config.GetType().GetFields().ToList();
                 int fieldIdx = properties.FindIndex(field => field.Name == "DefaultMapGenBiome");
                 if (fieldIdx != -1)
                     Biome = (MapGenBiomeName)properties[fieldIdx].GetValue(Server.Config);
                 else
                     Biome = MapGenBiomeName.Forest;
-
-                HasSeed = false;
-                LongSeed = 0;
-                xChunkOffset = 0;
-                zChunkOffset = 0;
             }
         }
 
         public delegate bool GenArgSelector(Player p, string arg, ref GenArgs args);
-        public GenArgs ArgsForGen = new GenArgs(null);
+        public GenArgs ArgsForGen = new GenArgs();
 
-        public new MapGenArgSelector ArgFilter = (arg) => arg.Contains("=");
+        public new MapGenArgSelector ArgFilter = (arg) => arg.Contains('=');
         public new GenArgSelector ArgParser = (Player p, string arg, ref GenArgs args) =>
         {
             string[] split = arg.Split('=');
@@ -245,96 +239,92 @@ namespace VeryPlugins
 
         private void generateTerrain(int chunkX, int chunkZ, ref byte[] blocks)
         {
-            byte b4 = 4;
-            int i5 = worldObj.wHeight / 8;
-            int b5 = worldObj.wHeight / 2;
-            int i6 = b4 + 1;
-            int b7 = (worldObj.wHeight / 8) + 1;
-            int i8 = b4 + 1;
-            noiseArray = initializeNoiseField(noiseArray, chunkX * b4, 0, chunkZ * b4, i6, b7, i8);
+            byte horSamples = 4;
+            int verSamples = worldObj.wHeight / 8;
+            int seaLevel = worldObj.wHeight / 2;
+            int xSamples = horSamples + 1;
+            int ySamples = verSamples + 1;
+            int zSamples = horSamples + 1;
+            noiseArray = initializeNoiseField(noiseArray, chunkX * horSamples, 0, chunkZ * horSamples, xSamples, ySamples, zSamples);
 
-            for (int blobX = 0; blobX < b4; ++blobX)
+            for(int xS = 0; xS < horSamples; ++xS) 
             {
-                for (int blobZ = 0; blobZ < b4; ++blobZ)
+                for(int zS = 0; zS < horSamples; ++zS) 
                 {
-                    for (int blobY = 0; blobY < i5; ++blobY)
+                    for(int yS = 0; yS < verSamples; ++yS) 
                     {
-                        double d12 = 0.125D;
-                        double d14 = noiseArray[((blobX + 0) * i8 + blobZ + 0) * b7 + blobY + 0];
-                        double d16 = noiseArray[((blobX + 0) * i8 + blobZ + 1) * b7 + blobY + 0];
-                        double d18 = noiseArray[((blobX + 1) * i8 + blobZ + 0) * b7 + blobY + 0];
-                        double d20 = noiseArray[((blobX + 1) * i8 + blobZ + 1) * b7 + blobY + 0];
-                        double d22 = (noiseArray[((blobX + 0) * i8 + blobZ + 0) * b7 + blobY + 1] - d14) * d12;
-                        double d24 = (noiseArray[((blobX + 0) * i8 + blobZ + 1) * b7 + blobY + 1] - d16) * d12;
-                        double d26 = (noiseArray[((blobX + 1) * i8 + blobZ + 0) * b7 + blobY + 1] - d18) * d12;
-                        double d28 = (noiseArray[((blobX + 1) * i8 + blobZ + 1) * b7 + blobY + 1] - d20) * d12;
+                        double x0y0z0 = noiseArray[( xS      * zSamples + zS    ) * ySamples + yS    ];
+                        double x0y0z1 = noiseArray[( xS      * zSamples + zS + 1) * ySamples + yS    ];
+                        double x1y0z0 = noiseArray[((xS + 1) * zSamples + zS    ) * ySamples + yS    ];
+                        double x1y0z1 = noiseArray[((xS + 1) * zSamples + zS + 1) * ySamples + yS    ];
+                        double x0y1z0 = noiseArray[( xS      * zSamples + zS    ) * ySamples + yS + 1];
+                        double x0y1z1 = noiseArray[( xS      * zSamples + zS + 1) * ySamples + yS + 1];
+                        double x1y1z0 = noiseArray[((xS + 1) * zSamples + zS    ) * ySamples + yS + 1];
+                        double x1y1z1 = noiseArray[((xS + 1) * zSamples + zS + 1) * ySamples + yS + 1];
 
-                        for (int blobPosY = 0; blobPosY < 8; ++blobPosY)
+
+                        for(int yP = 0; yP < 8; ++yP) 
                         {
-                            double d31 = 0.25D;
-                            double d33 = d14;
-                            double d35 = d16;
-                            double d37 = (d18 - d14) * d31;
-                            double d39 = (d20 - d16) * d31;
+                            double yLerp = yP / 8.0D;
 
-                            for (int blobPosX = 0; blobPosX < 4; ++blobPosX)
+                            double x0z0 = x0y0z0 + (x0y1z0 - x0y0z0) * yLerp;
+                            double x0z1 = x0y0z1 + (x0y1z1 - x0y0z1) * yLerp;
+                            double x1z0 = x1y0z0 + (x1y1z0 - x1y0z0) * yLerp;
+                            double x1z1 = x1y0z1 + (x1y1z1 - x1y0z1) * yLerp;
+
+
+                            for(int xP = 0; xP < 4; ++xP) 
                             {
-                                double d44 = 0.25D;
-                                double d46 = d33;
-                                double d48 = (d35 - d33) * d44;
+                                double xLerp = xP / 4.0D;
 
-                                for (int blobPosZ = 0; blobPosZ < 4; ++blobPosZ)
+                                double z0 = x0z0 + (x1z0 - x0z0) * xLerp;
+                                double z1 = x0z1 + (x1z1 - x0z1) * xLerp;
+
+                                for(int zP = 0; zP < 4; ++zP) 
                                 {
-                                    int blockX = blobX << 2 | blobPosX;
-                                    int blockY = blobY << 3 | blobPosY;
-                                    int blockZ = blobZ << 2 | blobPosZ;
+                                    double zLerp = zP / 4.0D;
 
-                                    int index = blockY << 8 | blockZ << 4 | blockX;
+                                    double lerpedValue = z0 + (z1 - z0) * zLerp;
 
-                                    int i51 = 0;
-                                    if (blockY < b5)
+                                    int xR = xS << 2 | xP;
+                                    int yR = yS << 3 | yP;
+                                    int zR = zS << 2 | zP;
+                                    int idx = yR << 8 | zR << 4 | xR;
+
+                                    byte b = 0;
+
+                                    if (lerpedValue > 0.0D) 
                                     {
-                                        i51 = worldObj.theme.Water;
-                                    }
-
-                                    if (d46 > 0.0D)
+                                        b = worldObj.theme.Cliff;
+                                    } 
+                                    else if (yR < seaLevel) 
                                     {
-                                        i51 = worldObj.theme.Cliff;
-                                    }
+                                        b = worldObj.theme.Water;
+                                    } 
 
-                                    blocks[index] = (byte)i51;
-                                    d46 += d48;
+                                    blocks[idx] = b;
                                 }
-
-                                d33 += d37;
-                                d35 += d39;
                             }
-
-                            d14 += d22;
-                            d16 += d24;
-                            d18 += d26;
-                            d20 += d28;
                         }
                     }
                 }
             }
-
         }
 
         private void replaceSurfaceBlocks(int chunkX, int chunkZ, ref byte[] blocks)
         {
             int seaLevel = worldObj.wHeight / 2;
-            double d5 = 8.0D / 256D;
+            double surfaceCoordScale = 8.0D / 256D;
 
             for (int x = 0; x < 16; ++x)
             {
                 for (int z = 0; z < 16; ++z)
                 {
-                    double dd2 = (chunkX << 4) + x;
-                    double dd4 = (chunkZ << 4) + z;
-                    bool generateSandBeach = beachNoise.generateNoise(dd2 * d5, dd4 * d5, 0.0D) + rand.NextDouble() * 0.2D > 0D; //sand
-                    bool generateGravelBeach = beachNoise.generateNoise(dd4 * d5, d5, dd2 * d5) + rand.NextDouble() * 0.2D > 3D; //gravel
-                    int heightLevel = (int)(surfaceHeightNoise.generateNoise(dd2 * d5 * 2D, dd4 * d5 * 2D) / 3D + 3D + rand.NextDouble() * 0.25D);
+                    double xW = (chunkX << 4) + x;
+                    double zW = (chunkZ << 4) + z;
+                    bool generateSandBeach = beachNoise.generateNoise(xW * surfaceCoordScale, zW * surfaceCoordScale, 0.0D) + rand.NextDouble() * 0.2D > 0D; //sand
+                    bool generateGravelBeach = beachNoise.generateNoise(zW * surfaceCoordScale, surfaceCoordScale, xW * surfaceCoordScale) + rand.NextDouble() * 0.2D > 3D; //gravel
+                    int heightLevel = (int)(surfaceHeightNoise.generateNoise(xW * surfaceCoordScale * 2D, zW * surfaceCoordScale * 2D) / 3D + 3D + rand.NextDouble() * 0.25D);
                     int height = -1;
                     byte surface = worldObj.theme.Surface;
                     byte ground = worldObj.theme.Ground;
@@ -411,15 +401,8 @@ namespace VeryPlugins
 
             generateTerrain(i1 + worldObj.genArgs.xChunkOffset, i2 + worldObj.genArgs.zChunkOffset, ref chunkBlocks);
             replaceSurfaceBlocks(i1 + worldObj.genArgs.xChunkOffset, i2 + worldObj.genArgs.zChunkOffset, ref chunkBlocks);
-            if (worldObj.genArgs.GenCaves) caveGenerator.generate(worldObj, i1 + worldObj.genArgs.xChunkOffset, i2 + worldObj.genArgs.zChunkOffset, ref chunkBlocks);
-
-            // for (int x = 0; x < 16; x++)
-            // {
-            // 	for (int z = 0; z < 16; z++)
-            // 	{
-            // 		chunkBlocks[z << 4 | x] = (byte)(((rand.NextInt()) & 15) + 21);
-            // 	}
-            // }
+            if (worldObj.genArgs.GenCaves) 
+                caveGenerator.generate(worldObj, i1 + worldObj.genArgs.xChunkOffset, i2 + worldObj.genArgs.zChunkOffset, ref chunkBlocks);
 
             GenChunk chunk = new GenChunk(worldObj, i1, i2, chunkBlocks);
 
@@ -489,7 +472,6 @@ namespace VeryPlugins
 
                     for (int y = 0; y < ySamples; ++y)
                     {
-                        double density = 0.0D;
                         double offset = (y - d22) * 12.0D / scale;
                         if (offset < 0.0D)
                         {
@@ -499,6 +481,7 @@ namespace VeryPlugins
                         double min = minLimitNoiseSample[index] / 512.0D;
                         double max = maxLimitNoiseSample[index] / 512.0D;
                         double main = (mainNoiseSample[index] / 10.0D + 1.0D) / 2.0D;
+                        double density;
                         if (main < 0.0D)
                         {
                             density = min;
@@ -558,8 +541,6 @@ namespace VeryPlugins
             long j6 = rand.NextLong() / 2L * 2L + 1L;
             long j8 = rand.NextLong() / 2L * 2L + 1L;
             rand.SetSeed((chunkX + worldObj.genArgs.xChunkOffset) * j6 + (chunkZ + worldObj.genArgs.zChunkOffset) * j8 ^ worldObj.genArgs.LongSeed);
-            double d10 = 0.25D;
-
             int i12;
             int i13;
             int i14;
@@ -605,7 +586,7 @@ namespace VeryPlugins
                 new WorldGenMinable(Block.GoldOre, 8).generate(worldObj, rand, i13, i14, i15);
             }
 
-            d10 = 0.5D;
+            double d10 = 0.5D;
             i12 = (int)((treeDensityNoise.generateNoise(i4 * d10, i5 * d10) / 8.0D + rand.NextDouble() * 4.0D + 4.0D) / 3.0D);
             if (i12 < 0)
             {
@@ -617,7 +598,6 @@ namespace VeryPlugins
                 ++i12;
             }
 
-            //TODO: implement thing to implement world theme trees within WorldGenerator
             WorldGenerator object18 = null;
 
             if (worldObj.theme.TreeType == "") object18 = new WorldGenTrees();
@@ -1429,27 +1409,27 @@ namespace VeryPlugins
 
         public void GenerateHeightMap()
         {
-            int i1 = world.wHeight;
+            int lowest = world.wHeight;
 
             for (int z = 0; z < 16; ++z)
             {
                 for (int x = 0; x < 16; ++x)
                 {
-                    int i4 = world.wHeight - 1;
+                    int y = world.wHeight - 1;
 
-                    int i5 = z << 4 | x;
+                    int idx = z << 4 | x;
                     int id;
                     do
                     {
-                        id = blocks[(i4 - 1) << 8 | i5];
-                        i4--;
+                        id = blocks[(y - 1) << 8 | idx];
+                        y--;
                     }
-                    while (i4 > 0 && world.mcgLevel.LightPasses((ushort)id));
+                    while (y > 0 && world.mcgLevel.LightPasses((ushort)id));
 
-                    heightMap[i5] = i4 + 1; //FIXME: this is probably not how it should be.
-                    if (i4 < i1)
+                    heightMap[idx] = y + 1; //FIXME: this is probably not how it should be.
+                    if (y < lowest)
                     {
-                        i1 = i4;
+                        lowest = y;
                     }
                 }
             }
