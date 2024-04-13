@@ -19,3 +19,5 @@ A port of Supernova's spleef for MCGalaxy.
 A port of Minecraft Alpha's terrain generator.
 ## Rainbow.cs
 Improved version of the rainbow text plugin. The plugin uses color code r for rainbow text.
+## fancyvoronoigen.cs
+An attempt to improve the Voronoi terrain generator in MCGalaxy to have terrain that doesn't consist of only cliffs
