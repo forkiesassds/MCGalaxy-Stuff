@@ -21,3 +21,5 @@ A port of Minecraft Alpha's terrain generator.
 Improved version of the rainbow text plugin. The plugin uses color code r for rainbow text.
 ## fancyvoronoigen.cs
 An attempt to improve the Voronoi terrain generator in MCGalaxy to have terrain that doesn't consist of only cliffs
+## usedCmdWarn.cs
+Plugin that warns opchat when a command that is defined in `plugins/warncmds.txt` has been used
