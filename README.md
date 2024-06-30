@@ -23,3 +23,5 @@ Improved version of the rainbow text plugin. The plugin uses color code r for ra
 An attempt to improve the Voronoi terrain generator in MCGalaxy to have terrain that doesn't consist of only cliffs
 ## usedCmdWarn.cs
 Plugin that warns opchat when a command that is defined in `plugins/warncmds.txt` has been used
+## preventDiscordBackdoor.cs
+This plugin prevents any backdoors that people who have been banned from a server yet still are in discordcontrollers.txt to be able to abuse operator commands.
