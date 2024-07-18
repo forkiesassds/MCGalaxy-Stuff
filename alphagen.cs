@@ -15,7 +15,7 @@ namespace VeryPlugins
     public sealed class PluginAlphaGen : Plugin
     {
         public override string name { get { return "PluginAlphaGen"; } }
-        public override string MCGalaxy_Version { get { return "1.9.4.8"; } }
+        public override string MCGalaxy_Version { get { return "1.9.4.9"; } }
         public override string creator { get { return ""; } }
 
 
@@ -52,7 +52,7 @@ namespace VeryPlugins
         public class GenArgs
         {
             public bool GenCaves = true;
-            public MapGenBiomeName Biome;
+            public string Biome;
             public bool HasSeed = false;
             public long LongSeed = 0;
             public int xChunkOffset = 0;
@@ -60,12 +60,7 @@ namespace VeryPlugins
 
             public GenArgs()
             {
-                List<FieldInfo> properties = Server.Config.GetType().GetFields().ToList();
-                int fieldIdx = properties.FindIndex(field => field.Name == "DefaultMapGenBiome");
-                if (fieldIdx != -1)
-                    Biome = (MapGenBiomeName)properties[fieldIdx].GetValue(Server.Config);
-                else
-                    Biome = MapGenBiomeName.Forest;
+                Biome = Server.Config.DefaultMapGenBiome;
             }
         }
 
@@ -91,7 +86,8 @@ namespace VeryPlugins
                     }
                     break;
                 case "theme":
-                    if (!CommandParser.GetEnum(p, value, "Theme", ref args.Biome)) return false;
+                    args.Biome = MapGenBiome.FindMatch(p, arg);
+                    if (args.Biome == null) return false;
                     break;
                 case "seed":
                     if (!long.TryParse(value, out args.LongSeed))
@@ -134,7 +130,8 @@ namespace VeryPlugins
                 }
                 else
                 {
-                    if (!CommandParser.GetEnum(p, arg, "Seed", ref Biome)) return false;
+                    Biome = MapGenBiome.FindMatch(p, arg);
+                    if (Biome == null) return false;
                 }
             }
 
@@ -151,7 +148,7 @@ namespace VeryPlugins
             hack.Args = mgArgs.Args;
 
             if (!hack.ParseArgs(p)) return false;
-            MapGenBiomeName theme = hack.ArgsForGen.Biome;
+            string theme = hack.ArgsForGen.Biome;
             long rngSeed = hack.ArgsForGen.LongSeed;
 
             MapGenBiome theme2 = MapGenBiome.Get(theme);
