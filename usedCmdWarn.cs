@@ -43,7 +43,7 @@ namespace VeryPlugins
         {
             if (warnCmds != null && warnCmds.CaselessContains(cmd))
             {
-                string msg = "To Ops: " + p.name + " &Sused " + "/" + cmd + " " + args;
+                string msg = "To Ops: " + p.name + " &Sused /" + cmd + " " + args;
                 Chat.Message(ChatScope.Perms, msg, Chat.OpchatPerms, null, true);
             }
         }
