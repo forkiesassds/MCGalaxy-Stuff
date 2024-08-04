@@ -25,3 +25,5 @@ An attempt to improve the Voronoi terrain generator in MCGalaxy to have terrain 
 Plugin that warns opchat when a command that is defined in `plugins/warncmds.txt` has been used
 ## preventDiscordBackdoor.cs
 This plugin prevents any backdoors that people who have been banned from a server yet still are in discordcontrollers.txt to be able to abuse operator commands.
+## ServerSettingCmdPlugin.cs
+Plugin that adds commands to view and manage server settings from ingame.
