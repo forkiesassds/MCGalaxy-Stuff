@@ -27,3 +27,5 @@ Plugin that warns opchat when a command that is defined in `plugins/warncmds.txt
 This plugin prevents any backdoors that people who have been banned from a server yet still are in discordcontrollers.txt to be able to abuse operator commands.
 ## ServerSettingCmdPlugin.cs
 Plugin that adds commands to view and manage server settings from ingame.
+## MessageConsent.cs
+Plugin that makes everyone require to confirm if they should see any message sent by anyone.
