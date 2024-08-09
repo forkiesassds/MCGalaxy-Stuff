@@ -12,7 +12,7 @@ namespace MCGalaxy.Games
     public sealed class SpleefPlugin : Plugin
     {
         public override string creator { get { return "icanttellyou"; } }
-        public override string MCGalaxy_Version { get { return "1.9.4.6"; } }
+        public override string MCGalaxy_Version { get { return "1.9.4.9"; } }
         public override string name { get { return "Spleef"; } }
 
         Command cmd;
@@ -117,7 +117,7 @@ namespace MCGalaxy.Games
         public static SpleefGame Instance = new SpleefGame();
         public SpleefGame()
         {
-            Picker = new LevelPicker();
+            Picker = new SimpleLevelPicker();
         }
 
         public override void UpdateMapConfig() { }
