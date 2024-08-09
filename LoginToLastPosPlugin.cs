@@ -68,7 +68,7 @@ namespace VeryPlugins
                 cfg.Load(propsPath);
 
                 AccessController visitAccess = new LevelAccessController(cfg, map, true);
-                if (!visitAccess.CheckDetailed(p, p.Rank)) { ClearExtraFields(p); return; }
+                if (!visitAccess.CheckDetailed(p, p.Rank) || cfg.MOTD.Contains("-lastpos")) { ClearExtraFields(p); return; }
 
                 lvl = LevelActions.Load(p, map, false);
 
