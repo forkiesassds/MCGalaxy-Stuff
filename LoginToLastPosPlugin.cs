@@ -27,14 +27,14 @@ namespace VeryPlugins
             });
 
             OnPlayerFinishConnectingEvent.Register(HandleOnPlayerFinishConnecting, Priority.High);
-            OnJoinedLevelEvent.Register(HandleOnJoinedLevelEvent, Priority.High);
+            OnJoinedLevelEvent.Register(HandleOnJoinedLevel, Priority.High);
             OnPlayerDisconnectEvent.Register(HandleOnPlayerDisconnect, Priority.High);
         }
 
         public override void Unload(bool auto)
         {
             OnPlayerFinishConnectingEvent.Unregister(HandleOnPlayerFinishConnecting);
-            OnJoinedLevelEvent.Unregister(HandleOnJoinedLevelEvent);
+            OnJoinedLevelEvent.Unregister(HandleOnJoinedLevel);
             OnPlayerDisconnectEvent.Unregister(HandleOnPlayerDisconnect);
         }
 
@@ -96,7 +96,7 @@ namespace VeryPlugins
             p.Extras.Remove("LAST_PITCH");
         }
 
-        private void HandleOnJoinedLevelEvent(Player p, Level prev, Level lvl, ref bool announce)
+        private void HandleOnJoinedLevel(Player p, Level prev, Level lvl, ref bool announce)
         {
             if (prev != null) return;
 
@@ -107,6 +107,7 @@ namespace VeryPlugins
                 Orientation newOr = new Orientation((byte)p.Extras.GetInt("LAST_YAW"), (byte)p.Extras.GetInt("LAST_PITCH"));
 
                 p.SendPosition(newPos, newOr);
+                ClearExtraFields(p);
             }
         }
 
