@@ -82,7 +82,7 @@ namespace VeryPlugins
             bool canJoin = lvl.CanJoin(p);
             //We are joining a level right? As it's not the main level.
             OnJoiningLevelEvent.Call(p, lvl, ref canJoin);
-            if (!canJoin) { ClearExtraFields(p); return; }
+            if (!canJoin || !lvl.Config.MOTD.Contains("-lastpos")) { ClearExtraFields(p); return; }
 
             p.level = lvl;
         }
