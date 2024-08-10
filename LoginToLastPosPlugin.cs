@@ -52,7 +52,7 @@ namespace VeryPlugins
             }, "WHERE Name=@0", new string[] { p.name });
             if (map == null) { ClearExtraFields(p); return; }
 
-            if (!LevelInfo.AllMapNames().Contains(map))
+            if (!LevelInfo.MapExists(map))
             {
                 p.Message("&WThe map you were on no longer exists!");
                 ClearExtraFields(p); return;
