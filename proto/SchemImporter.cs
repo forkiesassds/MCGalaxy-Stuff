@@ -45,14 +45,12 @@ namespace VeryPlugins
             ReadPalette((NbtCompound)bData["Palette"], ref palette);
 
             byte[] data = bData["Data"].ByteArrayValue;
-            int delta = 0;
+            int index = 0;
             for (ushort y = 0; y < height; y++)
                 for (ushort z = 0; z < length; z++)
                     for (ushort x = 0; x < width; x++)
             {
-                int index = x + (z + y * length) * width + delta;
-                int pEntry = ReadVarIntFromArray(data, index, ref delta);
-                
+                int pEntry = ReadVarIntFromArray(data, ref index);
                 lvl.SetBlock(x, y, z, palette[pEntry]);
             }
         }
@@ -83,9 +81,8 @@ namespace VeryPlugins
         private const int SEGMENT_BITS = 0x7F;
         private const int CONTINUE_BIT = 0x80;
 
-        public static int ReadVarIntFromArray(byte[] array, int index, ref int delta) 
+        public static int ReadVarIntFromArray(byte[] array, ref int index) 
         {
-            int start = index;
             int value = 0;
             int position = 0;
             byte currentByte;
@@ -102,7 +99,6 @@ namespace VeryPlugins
                 if (position >= 32) throw new Exception("VarInt is too big");
             }
 
-            delta += index - start - 1;
             return value;
         }
     }
