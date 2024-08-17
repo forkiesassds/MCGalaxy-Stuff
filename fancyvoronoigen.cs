@@ -36,13 +36,20 @@ namespace VeryPlugins
             v.Seed = args.Seed;
             MapGenBiome biome = MapGenBiome.Get(args.Biome);
 
+            double[] values = new double[(width + 1) * (length + 1)];
+
+            for (int xS = 0; xS < width + 1; ++xS)
+                for (int zS = 0; zS < length + 1; ++zS)
+                    values[xS + zS * (width + 1)] = v.GetValue(xS, 10, zS) * 10;
+
             for (int xS = 0; xS < width; ++xS)
                 for (int zS = 0; zS < length; ++zS)
                 {
-                    double x0z0 = v.GetValue(xS    , 10, zS    ) * 10;
-                    double x0z1 = v.GetValue(xS    , 10, zS + 1) * 10;
-                    double x1z0 = v.GetValue(xS + 1, 10, zS    ) * 10;
-                    double x1z1 = v.GetValue(xS + 1, 10, zS + 1) * 10;
+                    int b = xS + zS * (width + 1);
+                    double x0z0 = values[b];
+                    double x0z1 = values[b + width + 1];
+                    double x1z0 = values[b + 1];
+                    double x1z1 = values[b + width + 1 + 1];
 
                     for (int xP = 0; xP < 4; ++xP)
                     {
