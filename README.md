@@ -27,3 +27,5 @@ Plugin that adds commands to view and manage server settings from ingame.
 Plugin that makes everyone require to confirm if they should see any message sent by anyone.
 ## LoginToLastPosPlugin.cs
 This plugin makes players login at their last position. This includes the map they were on and precise position and orientation.
+## BetacraftV2Heartbeat.cs
+Plugin that implements Betacraft V2 heartbeat to list to the Betacraft V2 server list.
