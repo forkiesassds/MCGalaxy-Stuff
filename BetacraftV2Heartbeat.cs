@@ -99,12 +99,11 @@ namespace VeryPlugins
             }
         }
 
-        private bool fullHeartbeat = true;
         protected override string GetHeartbeatData()
         {
-            if (fullHeartbeat)
+            if (config.fullHeartbeat)
             {
-                fullHeartbeat = false;
+                config.fullHeartbeat = false;
 
                 return Json.SerialiseObject(new JsonObject()
                 {
@@ -195,6 +194,7 @@ namespace VeryPlugins
         public string ConnectAddress = "";
 
         public string Icon = null;
+        internal bool fullHeartbeat;
 
         static ConfigElement[] cfg;
         public void Load(string path)
@@ -213,6 +213,8 @@ namespace VeryPlugins
                 byte[] b = File.ReadAllBytes(path + "/icon.png");
                 Icon = Convert.ToBase64String(b);
             }
+
+            fullHeartbeat = true;
         }
 
         public void Save(string path)
