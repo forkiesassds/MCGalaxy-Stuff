@@ -57,12 +57,14 @@ namespace VeryPlugins
 
     public class PlayerUtils
     {
-        public static List<Player> FilterOnlyCanSee(LevelPermission plRank, IEnumerable<Player> players)
+        public static JsonArray FilterOnlyCanSee(LevelPermission plRank, IEnumerable<Player> players)
         {
-            List<Player> list = new List<Player>();
+            JsonArray list = new JsonArray();
             foreach (Player pl in players)
             {
-                if (!pl.hidden || plRank >= pl.hideRank) list.Add(pl);
+                if (!pl.hidden || plRank >= pl.hideRank) list.Add(new JsonObject() {
+                    { "username", pl.name }
+                });
             }
             return list;
         }
@@ -74,7 +76,7 @@ namespace VeryPlugins
 
         public BetacraftV2Heartbeat(HeartbeatConfig conf)
         {
-            URL = "http://api.betacraft.uk/v2/server_update";
+            URL = "https://api.betacraft.uk/v2/server_update";
             config = conf;
         }
 
@@ -97,41 +99,45 @@ namespace VeryPlugins
             }
         }
 
+        private bool fullHeartbeat = true;
         protected override string GetHeartbeatData()
         {
-            UpdateExternalIP();
-            return Json.SerialiseObject(new JsonObject()
-            {
-                { "name", Server.Config.Name },
-                { "connect_version", config.ConnectVersion },
-                { "connect_protocol", config.ConnectProtocol },
-                { "connect_socket", externalIP + ":" + Server.Config.Port },
-                { "version_category", "classic" },
-                { "description", config.Description },
-                { "is_public", Server.Config.Public },
-                { "max_players", Server.Config.MaxPlayers },
-                { "online_players", PlayerInfo.NonHiddenUniqueIPCount() },
-                { "software_name", System.Text.RegularExpressions.Regex.Replace(Server.SoftwareName, "&.", "") },
-                { "software_version", Server.Version },
-                { "connect_online_mode", Server.Config.VerifyNames },
-                { "player_names", string.Join(',', PlayerUtils.FilterOnlyCanSee(Group.DefaultRank.Permission,
-                                                        PlayerInfo.Online.Items).Select(p => p.name)) }
-            });
-        }
+            if (fullHeartbeat) {
+                fullHeartbeat = false;
 
-        static string externalIP;
-        static void UpdateExternalIP()
-        {
-            if (externalIP != null) return;
-
-            try
-            {
-                externalIP = HttpUtil.LookupExternalIP();
+                return Json.SerialiseObject(new JsonObject()
+                {
+                    { "private_key", config.PrivateKey },
+                    { "name", Server.Config.Name },
+                    { "game_version", config.ConnectVersion },
+                    { "v1_version", config.ConnectV1Version },
+                    { "protocol", config.ConnectProtocol },
+                    { "socket", config.ConnectAddress },
+                    { "category", "classic" },
+                    { "description", config.Description },
+                    { "is_public", Server.Config.Public },
+                    { "max_players", Server.Config.MaxPlayers },
+                    { "online_players", PlayerInfo.NonHiddenUniqueIPCount() },
+                    { "software", new JsonObject() {
+                        { "name", System.Text.RegularExpressions.Regex.Replace(Server.SoftwareName, "&.", "") },
+                        { "version", Server.Version }
+                    } },
+                    { "online_mode", Server.Config.VerifyNames },
+                    { "players", PlayerUtils.FilterOnlyCanSee(Group.DefaultRank.Permission,
+                                            PlayerInfo.Online.Items) }
+                });
+            } else {
+                URL = "https://api.betacraft.uk/v2/server_update_ping";
+                return Json.SerialiseObject(new JsonObject()
+                {
+                    { "private_key", config.PrivateKey },
+                    { "socket", config.ConnectAddress },
+                    { "online_players", PlayerInfo.NonHiddenUniqueIPCount() },
+                    { "players", PlayerUtils.FilterOnlyCanSee(Group.DefaultRank.Permission,
+                                            PlayerInfo.Online.Items) }
+                });
             }
-            catch (Exception ex)
-            {
-                Logger.LogError("Retrieving external IP", ex);
-            }
+            
         }
 
         protected override void OnFailure(string response)
@@ -154,9 +160,13 @@ namespace VeryPlugins
         {
             string text = HttpUtil.GetResponseText(response);
 
-            //To Moresteck: why is it "Success!" and not Success!
-            if (text != "\"Success!\"" && !string.IsNullOrEmpty(text))
-                Logger.Log(LogType.Warning, "[BCV2] Error: Server responded with " + text);
+            JsonObject responseJson = (JsonObject) new JsonReader(text).Parse();
+
+            if (responseJson.ContainsKey("error") && bool.Parse((string)responseJson["error"])) {
+                string message = (string) responseJson["message"];
+
+                Logger.Log(LogType.Warning, "[BCV2] Error: Server responded with " + message);
+            }
         }
     }
 
@@ -166,18 +176,29 @@ namespace VeryPlugins
         public string Description = "Come and join the fun!";
         [ConfigString("connect-version", "Version", "c0.30-c-1900")]
         public string ConnectVersion = "c0.30-c-1900";
+        [ConfigString("connect-v1_version", "Version", "c0.30-c-1900")]
+        public string ConnectV1Version = "c0.30-c-1900";
         [ConfigString("connect-protocol", "Version", "classic_7")]
         public string ConnectProtocol = "classic_7";
         [ConfigString("name-suffix", "Auth service", "", true)]
         public string NameSuffix = "";
         [ConfigString("skin-prefix", "Auth service", "https://minotar.net/skin/", true)]
         public string SkinPrefix = "https://minotar.net/skin/";
+        [ConfigString("private-key", "Heartbeat authentication", "", true)]
+        public string PrivateKey = "";
+        [ConfigString("connect-address", "Heartbeat authentication", "", true)]
+        public string ConnectAddress = "";
 
         static ConfigElement[] cfg;
         public void Load(string path)
         {
             if (cfg == null) cfg = ConfigElement.GetAll(typeof(HeartbeatConfig));
             ConfigElement.ParseFile(cfg, path + "/heartbeat.properties", this);
+
+            // reduce lag on startup
+            if (ConnectAddress == "") {
+                ConnectAddress = GetExternalIP() + ":" + Server.Config.Port;
+            }
         }
 
         public void Save(string path)
@@ -188,12 +209,36 @@ namespace VeryPlugins
                 w.WriteLine("# This file contains settings for configuring the Betacraft V2 heartbeat.");
                 w.WriteLine("# description - The description that shows up on the server list");
                 w.WriteLine("# connect-version - Version to use by default for connecting to the server");
+                w.WriteLine("# connect-v1_version - Version to use by Betacraft V1 launcher for connecting to the server");
                 w.WriteLine("# connect-protocol - The protocol version to use for the server.");
                 w.WriteLine("# name-suffix - See description in authservices.properties");
                 w.WriteLine("# skin-prefix - See description in authservices.properties");
+                w.WriteLine("# private-key - Private key used to identify with the heartbeat server");
+                w.WriteLine("# connect-address - Address of your server");
                 w.WriteLine();
+
+                if (ConnectAddress == "") {
+                    ConnectAddress = GetExternalIP() + ":" + Server.Config.Port;
+                }
+
                 ConfigElement.Serialise(cfg, w, this);
             }
+        }
+
+        static string externalIP = null;
+        static string GetExternalIP()
+        {
+            if (externalIP != null) return externalIP;
+
+            try
+            {
+                externalIP = HttpUtil.LookupExternalIP();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Retrieving external IP", ex);
+            }
+            return externalIP;
         }
     }
 }
