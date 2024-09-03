@@ -102,13 +102,15 @@ namespace VeryPlugins
         private bool fullHeartbeat = true;
         protected override string GetHeartbeatData()
         {
-            if (fullHeartbeat) {
+            if (fullHeartbeat)
+            {
                 fullHeartbeat = false;
 
                 return Json.SerialiseObject(new JsonObject()
                 {
                     { "private_key", config.PrivateKey },
                     { "name", Server.Config.Name },
+                    { "icon", config.Icon },
                     { "game_version", config.ConnectVersion },
                     { "v1_version", config.ConnectV1Version },
                     { "protocol", config.ConnectProtocol },
@@ -126,7 +128,9 @@ namespace VeryPlugins
                     { "players", PlayerUtils.FilterOnlyCanSee(Group.DefaultRank.Permission,
                                             PlayerInfo.Online.Items) }
                 });
-            } else {
+            }
+            else
+            {
                 URL = "https://api.betacraft.uk/v2/server_update_ping";
                 return Json.SerialiseObject(new JsonObject()
                 {
@@ -137,7 +141,7 @@ namespace VeryPlugins
                                             PlayerInfo.Online.Items) }
                 });
             }
-            
+
         }
 
         protected override void OnFailure(string response)
@@ -160,10 +164,11 @@ namespace VeryPlugins
         {
             string text = HttpUtil.GetResponseText(response);
 
-            JsonObject responseJson = (JsonObject) new JsonReader(text).Parse();
+            JsonObject responseJson = (JsonObject)new JsonReader(text).Parse();
 
-            if (responseJson.ContainsKey("error") && bool.Parse((string)responseJson["error"])) {
-                string message = (string) responseJson["message"];
+            if (responseJson.ContainsKey("error") && bool.Parse((string)responseJson["error"]))
+            {
+                string message = (string)responseJson["message"];
 
                 Logger.Log(LogType.Warning, "[BCV2] Error: Server responded with " + message);
             }
@@ -189,6 +194,8 @@ namespace VeryPlugins
         [ConfigString("connect-address", "Heartbeat authentication", "", true)]
         public string ConnectAddress = "";
 
+        public string Icon = null;
+
         static ConfigElement[] cfg;
         public void Load(string path)
         {
@@ -196,8 +203,15 @@ namespace VeryPlugins
             ConfigElement.ParseFile(cfg, path + "/heartbeat.properties", this);
 
             // reduce lag on startup
-            if (ConnectAddress == "") {
+            if (ConnectAddress == "")
+            {
                 ConnectAddress = GetExternalIP() + ":" + Server.Config.Port;
+            }
+
+            if (File.Exists(path + "/icon.png"))
+            {
+                byte[] b = File.ReadAllBytes(path + "/icon.png");
+                Icon = Convert.ToBase64String(b);
             }
         }
 
@@ -207,6 +221,7 @@ namespace VeryPlugins
             using (StreamWriter w = new StreamWriter(path + "/heartbeat.properties"))
             {
                 w.WriteLine("# This file contains settings for configuring the Betacraft V2 heartbeat.");
+                w.WriteLine("# To change server icon simply add icon.png in the same directory as this file.");
                 w.WriteLine("# description - The description that shows up on the server list");
                 w.WriteLine("# connect-version - Version to use by default for connecting to the server");
                 w.WriteLine("# connect-v1_version - Version to use by Betacraft V1 launcher for connecting to the server");
@@ -217,7 +232,8 @@ namespace VeryPlugins
                 w.WriteLine("# connect-address - Address of your server");
                 w.WriteLine();
 
-                if (ConnectAddress == "") {
+                if (ConnectAddress == "")
+                {
                     ConnectAddress = GetExternalIP() + ":" + Server.Config.Port;
                 }
 
