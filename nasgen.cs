@@ -12,7 +12,7 @@ namespace VeryPlugins
     public sealed class PluginNasGen : Plugin
     {
         public override string name { get { return "PluginNasGen"; } }
-        public override string MCGalaxy_Version { get { return "1.9.4.8"; } }
+        public override string MCGalaxy_Version { get { return "1.9.4.9"; } }
         public override string creator { get { return "Goodly"; } }
 
 
@@ -59,7 +59,7 @@ namespace VeryPlugins
         public static bool currentlyGenerating = false;
         public static bool Gen(Player p, Level lvl, MapGenArgs args)
         {
-            MapGenBiomeName theme = MapGenBiomeName.Forest;
+            string theme = Server.Config.DefaultMapGenBiome;
 
             if (!args.ParseArgs(p)) return false;
             theme = args.Biome;

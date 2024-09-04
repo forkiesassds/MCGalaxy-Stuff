@@ -15,7 +15,7 @@ namespace VeryPlugins
     public sealed class PluginAlphaGen : Plugin
     {
         public override string name { get { return "PluginAlphaGen"; } }
-        public override string MCGalaxy_Version { get { return "1.9.4.8"; } }
+        public override string MCGalaxy_Version { get { return "1.9.4.9"; } }
         public override string creator { get { return ""; } }
 
 
@@ -27,11 +27,17 @@ namespace VeryPlugins
                 LineString("For example: \"genCaves=false,theme=Arctic,seed=Glacier\" generates a map without any caves" +
                 ", with the Arctic theme and using the seed \"Glacier\".") +
                 LineString("The following arguments are available:") +
-                LineString("genCaves (boolean): whether or not to generate caves.") +
+                LineString("genCaves (bool): whether or not to generate caves.") +
                 LineString("theme (many values): the theme of the map.") +
                 LineString("seed (long integer or string): the seed of the map") +
                 LineString("xChunkOffset (integer) offset of chunk position in the x direction") +
-                LineString("zChunkOffset (integer) offset of chunk position in the z direction"));
+                LineString("zChunkOffset (integer) offset of chunk position in the z direction") +
+                LineString("doIslands (bool): if the terrain generated follows an island shape") +
+                LineString("islandShape (many values): the shape of the island, default: Circle.") + 
+                LineString(IslandShape.ListShapes() + "&S") + 
+                LineString("islandRadius (int): radius of island, default: width/32 - defaultFalloffDist") +
+                LineString("islandFalloffDist (int): falloff distance of island, default: 8 ") +
+                LineString("islandSlide (double): adjusts how harsh the falloff is, default: -200"));
         }
         public override void Unload(bool shutdown)
         {
@@ -52,20 +58,20 @@ namespace VeryPlugins
         public class GenArgs
         {
             public bool GenCaves = true;
-            public MapGenBiomeName Biome;
+            public string Biome;
             public bool HasSeed = false;
             public long LongSeed = 0;
             public int xChunkOffset = 0;
             public int zChunkOffset = 0;
+            public bool DoIslands = false;
+            public DistanceProvider IslandProvider = IslandShape.Providers["Circle"];
+            public int IslandRadius = 16;
+            public int IslandFalloffDistance = 8;
+            public double IslandOceanSlideTarget = -200.0D;
 
             public GenArgs()
             {
-                List<FieldInfo> properties = Server.Config.GetType().GetFields().ToList();
-                int fieldIdx = properties.FindIndex(field => field.Name == "DefaultMapGenBiome");
-                if (fieldIdx != -1)
-                    Biome = (MapGenBiomeName)properties[fieldIdx].GetValue(Server.Config);
-                else
-                    Biome = MapGenBiomeName.Forest;
+                Biome = Server.Config.DefaultMapGenBiome;
             }
         }
 
@@ -91,7 +97,8 @@ namespace VeryPlugins
                     }
                     break;
                 case "theme":
-                    if (!CommandParser.GetEnum(p, value, "Theme", ref args.Biome)) return false;
+                    args.Biome = MapGenBiome.FindMatch(p, arg);
+                    if (args.Biome == null) return false;
                     break;
                 case "seed":
                     if (!long.TryParse(value, out args.LongSeed))
@@ -113,13 +120,62 @@ namespace VeryPlugins
                         return false;
                     }
                     break;
+                case "doIslands":
+                    if (!bool.TryParse(value, out args.DoIslands))
+                    {
+                        p.Message("Value " + value + " is not a valid value for doIslands!");
+                        return false;
+                    }
+                    break;
+                case "islandShape":
+                    DistanceProvider provider = IslandShape.GetDistanceProvider(p, value);
+                    if (provider == null)
+                        return false;
+
+                    args.IslandProvider = provider;
+                    break;
+                case "islandRadius":
+                    if (!int.TryParse(value, out args.IslandRadius))
+                    {
+                        p.Message("Value " + value + " is not a valid value for islandRadius!");
+                        return false;
+                    }
+                    break;
+                case "islandFalloffDist":
+                    if (!int.TryParse(value, out args.IslandFalloffDistance))
+                    {
+                        p.Message("Value " + value + " is not a valid value for islandFalloffDist!");
+                        return false;
+                    }
+                    break;
+                case "islandSlide":
+                    if (!double.TryParse(value, out args.IslandOceanSlideTarget))
+                    {
+                        p.Message("Value " + value + " is not a valid value for islandSlide!");
+                        return false;
+                    }
+                    break;
             }
             return true;
         };
 
+        private ushort width;
+        private ushort height;
+        private ushort length;
+
+        public MapGenArgsHack(ushort width, ushort height, ushort length)
+        {
+            this.width = width;
+            this.height = height;
+            this.length = length;
+        }
 
         public new bool ParseArgs(Player p)
         {
+            ArgsForGen.IslandRadius = (width / (16 * 2)) - ArgsForGen.IslandFalloffDistance;
+            ArgsForGen.xChunkOffset = -(width / (16 * 2));
+            ArgsForGen.zChunkOffset = -(length / (16 * 2));
+
             foreach (string arg in Args.Split(','))
             {
                 if (arg.Length == 0) continue;
@@ -134,7 +190,8 @@ namespace VeryPlugins
                 }
                 else
                 {
-                    if (!CommandParser.GetEnum(p, arg, "Seed", ref Biome)) return false;
+                    Biome = MapGenBiome.FindMatch(p, arg);
+                    if (Biome == null) return false;
                 }
             }
 
@@ -143,15 +200,40 @@ namespace VeryPlugins
         }
     }
 
+    public delegate double DistanceProvider(int x, int z);
+    public static class IslandShape
+    {
+        public static Dictionary<string, DistanceProvider> Providers = new Dictionary<string, DistanceProvider>()
+        {
+            { "Circle", (x, z) => Math.Sqrt(x * x + z * z) },
+            { "Square", (x, z) => Math.Max(Math.Abs(x), Math.Abs(z)) }
+        };
+
+        public static DistanceProvider GetDistanceProvider(Player p, string id)
+        {
+            int matches = 0;
+            var match = Matcher.Find(p, id, out matches, Providers, 
+                                        null, b => b.Key, "island shape");
+            
+            if (match.Value == null && matches == 0) p.Message(ListShapes());
+            return match.Value;
+        }
+
+        public static string ListShapes() 
+        {
+            return "&HAvailable island shapes: &f" + Providers.Join(b => b.Key);
+        }
+    }
+
     public static class AlphaGen
     {
         public static bool Gen(Player p, Level lvl, MapGenArgs mgArgs)
         {
-            MapGenArgsHack hack = new MapGenArgsHack();
+            MapGenArgsHack hack = new MapGenArgsHack(lvl.Width, lvl.Height, lvl.Length);
             hack.Args = mgArgs.Args;
 
             if (!hack.ParseArgs(p)) return false;
-            MapGenBiomeName theme = hack.ArgsForGen.Biome;
+            string theme = hack.ArgsForGen.Biome;
             long rngSeed = hack.ArgsForGen.LongSeed;
 
             MapGenBiome theme2 = MapGenBiome.Get(theme);
@@ -429,6 +511,8 @@ namespace VeryPlugins
             {
                 for (int z = 0; z < zSamples; ++z)
                 {
+                    double islandOffset = GetIslandOffset(x + xStart, z + zStart);
+
                     double scale = (scaleNoiseSample[scaleDepthIndex] + 256.0D) / 512.0D;
                     if (scale > 1.0D)
                     {
@@ -496,6 +580,7 @@ namespace VeryPlugins
                         }
 
                         density -= offset;
+                        density += islandOffset;
                         double d35;
                         if (y > ySamples - 4)
                         {
@@ -526,6 +611,27 @@ namespace VeryPlugins
             }
 
             return densityMap;
+        }
+
+        protected double GetIslandOffset(int noiseX, int noiseZ) 
+        {
+            MapGenArgsHack.GenArgs genArgs = worldObj.genArgs;
+
+            if (!genArgs.DoIslands) 
+            {
+                return 0.0D;
+            }
+
+            double distance = genArgs.IslandProvider(noiseX, noiseZ);
+            double oceanSlideTarget = genArgs.IslandOceanSlideTarget;
+
+            int centerIslandRadius = genArgs.IslandRadius * 4;
+            int centerIslandFalloffDistance = genArgs.IslandFalloffDistance * 4;
+            
+            double islandDelta = (distance - centerIslandRadius) / centerIslandFalloffDistance;
+            double islandOffset = MathHelper.clampedLerp(0.0, oceanSlideTarget, islandDelta);
+
+            return islandOffset;
         }
 
         public void Populate(int chunkX, int chunkZ)
@@ -1709,6 +1815,22 @@ namespace VeryPlugins
         public static int floor(double num)
         {
             return (int)Math.Floor(num);
+        }
+
+        public static double clampedLerp(double lowerBnd, double upperBnd, double slide) {
+            if (slide < 0.0D) 
+            {
+                return lowerBnd;
+            } 
+            else 
+            {
+                return slide > 1.0D ? upperBnd : lerp(slide, lowerBnd, upperBnd);
+            }
+        }
+
+        public static double lerp(double pct, double start, double end) 
+        {
+            return start + pct * (end - start);
         }
     }
 }
