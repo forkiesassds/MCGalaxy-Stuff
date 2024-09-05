@@ -17,7 +17,7 @@ namespace VeryPlugins
     {
         private const string CONFIG_FOLDER = "plugins/bcv2";
 
-        public override string MCGalaxy_Version => "1.9.4.9";
+        public override string MCGalaxy_Version => "1.9.5.0";
         public override string name => "BetacraftV2Heartbeat";
         public override string creator => "icanttellyou";
 

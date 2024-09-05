@@ -15,7 +15,7 @@ namespace VeryPlugins
     public sealed class PluginAlphaGen : Plugin
     {
         public override string name { get { return "PluginAlphaGen"; } }
-        public override string MCGalaxy_Version { get { return "1.9.4.9"; } }
+        public override string MCGalaxy_Version { get { return "1.9.5.0"; } }
         public override string creator { get { return ""; } }
 
 
