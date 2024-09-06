@@ -472,22 +472,20 @@ namespace MCGalaxy.Games
             game.GenerateMap(p, x, y, z);
         }
 
-        protected override void HandleStart(Player p, RoundsGame game_, string[] args)
+        protected override void HandleStart(Player p, RoundsGame game, string[] args)
         {
-            if (game_.Running) { p.Message("{0} is already running", game_.GameName); return; }
+            if (game.Running) { p.Message("{0} is already running", game.GameName); return; }
 
-            string map = args.Length > 1 ? args[1] : "spleef";
-            game_.Start(p, map, int.MaxValue);
+            game.Start(p, "spleef", int.MaxValue);
         }
 
         public override void Help(Player p)
         {
             p.Message("&T/Spl set [width] [height] [length]");
             p.Message("&HRe-generates the spleef map (default is 32x32x32)");
-            p.Message("&T/Spl start <map> &H- Starts Spleef");
+            p.Message("&T/Spl start &H- Starts Spleef");
             p.Message("&T/Spl stop &H- Stops Spleef");
             p.Message("&T/Spl end &H- Ends current round of Spleef");
-            p.Message("&T/Spl add/remove &H- Adds/removes current map from map list");
             p.Message("&T/Spl join &H- joins the game");
             p.Message("&T/Spl status &H- lists players currently playing");
         }
