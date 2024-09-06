@@ -41,7 +41,7 @@ namespace MCGalaxy.Games
 
     public sealed class SpleefConfig : RoundsGameConfig
     {
-        [ConfigInt("money-award", "Game settings", 30)]
+        [ConfigInt("money-award", "Game", 30)]
         public int MoneyAward = 30;
 
         public override bool AllowAutoload { get { return true; } }
