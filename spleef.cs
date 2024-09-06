@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using MCGalaxy.Commands;
 using MCGalaxy.Commands.Fun;
+using MCGalaxy.Config;
 using MCGalaxy.Generator;
 using MCGalaxy.Events.PlayerEvents;
 using MCGalaxy.Events.ServerEvents;
 using MCGalaxy.Network;
 using BlockID = System.UInt16;
-using MCGalaxy.Config;
 
 namespace MCGalaxy.Games
 {
