@@ -53,6 +53,7 @@ namespace VeryPlugins
             
 
             Player[] players = PlayerInfo.Online.Items;
+            bool counted = false;
 
             foreach (Player pl in players)
             {
@@ -64,6 +65,8 @@ namespace VeryPlugins
                 string toQueue = UnescapeMessage(pl, source, "λFULL: &f" + msg);
                 if (pl != source)
                 {
+                    if (!counted) { source.TotalMessagesSent++; counted = true; }
+
                     ((Queue<string>)pl.Extras["CONSENT_QUEUE"]).Enqueue(toQueue);
                     pl.Message("{0} &Shas sent a message! Do you want to view it? &2Y&S/&cN", pl.FormatNick(source));
                 }
