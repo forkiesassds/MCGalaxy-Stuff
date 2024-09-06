@@ -10,7 +10,7 @@ Edited version of NasGen, made for the ClassicalNuts server.
 ## 8ball2.cs
 A NA2 like version of /8ball
 ## spleef.cs
-A port of Supernova's spleef for MCGalaxy.
+An implementation of the spleef minigame.
 ## alphagen.cs
 A port of Minecraft Alpha's terrain generator.
 ## Rainbow.cs
@@ -24,7 +24,7 @@ This plugin prevents any backdoors that people who have been banned from a serve
 ## ServerSettingCmdPlugin.cs
 Plugin that adds commands to view and manage server settings from ingame.
 ## MessageConsent.cs
-Plugin that makes everyone require to confirm if they should see any message sent by anyone.
+Plugin that makes everyone require to confirm if they should see any message sent by anyone. Was made mostly as a joke.
 ## LoginToLastPosPlugin.cs
 This plugin makes players login at their last position. This includes the map they were on and precise position and orientation.
 ## BetacraftV2Heartbeat.cs

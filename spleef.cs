@@ -4,92 +4,46 @@ using MCGalaxy.Commands;
 using MCGalaxy.Commands.Fun;
 using MCGalaxy.Generator;
 using MCGalaxy.Events.PlayerEvents;
+using MCGalaxy.Events.ServerEvents;
 using MCGalaxy.Network;
 using BlockID = System.UInt16;
+using MCGalaxy.Config;
 
 namespace MCGalaxy.Games
 {
     public sealed class SpleefPlugin : Plugin
     {
         public override string creator { get { return "icanttellyou"; } }
-        public override string MCGalaxy_Version { get { return "1.9.4.9"; } }
+        public override string MCGalaxy_Version { get { return "1.9.5.0"; } }
         public override string name { get { return "Spleef"; } }
 
-        Command cmd;
+        Command cmd = new CmdSpleef();
         public override void Load(bool startup)
         {
-            OnPlayerSpawningEvent.Register(HandlePlayerSpawning, Priority.High);
-            OnJoinedLevelEvent.Register(HandleOnJoinedLevel, Priority.High);
-            OnBlockChangingEvent.Register(HandleBlockChanged, Priority.High);
-
-            SpleefGame.Instance.Config.Path = "./plugins/spleef.properties";
-            cmd = new CmdSpleef();
             Command.Register(cmd);
+            SpleefGame game = SpleefGame.Instance;
 
-            RoundsGame game = SpleefGame.Instance;
-            game.GetConfig().Load();
-            if (!game.Running) game.AutoStart();
+            game.Config.Path = "plugins/spleef.properties";
+            game.ReloadConfig();
+            OnConfigUpdatedEvent.Register(game.ReloadConfig, Priority.Low);
+            game.AutoStart();
         }
 
         public override void Unload(bool shutdown)
         {
-            OnPlayerSpawningEvent.Unregister(HandlePlayerSpawning);
-            OnJoinedLevelEvent.Unregister(HandleOnJoinedLevel);
-            OnBlockChangingEvent.Unregister(HandleBlockChanged);
             Command.Unregister(cmd);
-            RoundsGame game = SpleefGame.Instance;
+            SpleefGame game = SpleefGame.Instance;
             if (game.Running) game.End();
-        }
 
-        void HandlePlayerSpawning(Player p, ref Position pos, ref byte yaw, ref byte pitch, bool respawning)
-        {
-            if (!respawning || !SpleefGame.Instance.Remaining.Contains(p)) return;
-            SpleefGame.Instance.Map.Message(p.ColoredName + " &Sis out of spleef!");
-            SpleefGame.Instance.OnPlayerDied(p);
-        }
-
-        void HandleOnJoinedLevel(Player p, Level prevLevel, Level level, ref bool announce)
-        {
-            if (prevLevel == SpleefGame.Instance.Map && level != SpleefGame.Instance.Map)
-            {
-                if (SpleefGame.Instance.Picker.Voting) SpleefGame.Instance.Picker.ResetVoteMessage(p);
-                p.SendCpeMessage(CpeMessageType.Status1, "");
-                p.SendCpeMessage(CpeMessageType.Status2, "");
-                p.SendCpeMessage(CpeMessageType.Status3, "");
-                SpleefGame.Instance.PlayerLeftGame(p);
-            }
-            else if (level == SpleefGame.Instance.Map)
-            {
-                if (SpleefGame.Instance.Picker.Voting) SpleefGame.Instance.Picker.SendVoteMessage(p);
-            }
-
-            if (level != SpleefGame.Instance.Map) return;
-
-            if (prevLevel == SpleefGame.Instance.Map || SpleefGame.Instance.LastMap.Length == 0)
-            {
-                announce = false;
-            }
-            else if (prevLevel != null && prevLevel.name.CaselessEq(SpleefGame.Instance.LastMap))
-            {
-                // prevLevel is null when player joins main map
-                announce = false;
-            }
-        }
-
-        void HandleBlockChanged(Player p, ushort x, ushort y, ushort z, BlockID block, bool placing, ref bool cancel)
-        {
-            if (SpleefGame.Instance.Running && !SpleefGame.Instance.Remaining.Contains(p) && SpleefGame.Instance.Map == p.level)
-            {
-                p.Message("You are out of the round, and cannot break blocks.");
-                p.RevertBlock(x, y, z);
-                cancel = true;
-                return;
-            }
+            OnConfigUpdatedEvent.Unregister(game.ReloadConfig);
         }
     }
 
     public sealed class SpleefConfig : RoundsGameConfig
     {
+        [ConfigInt("money-award", "Game settings", 30)]
+        public int MoneyAward = 30;
+
         public override bool AllowAutoload { get { return true; } }
         protected override string GameName { get { return "Spleef"; } }
 
@@ -124,9 +78,7 @@ namespace MCGalaxy.Games
 
         protected override List<Player> GetPlayers()
         {
-            List<Player> playing = new List<Player>();
-            playing.AddRange(Players.Items);
-            return playing;
+            return Map.getPlayers();
         }
 
         public override void OutputStatus(Player p)
@@ -136,7 +88,7 @@ namespace MCGalaxy.Games
 
             if (RoundInProgress)
             {
-                p.Message(players.Join(pl => FormatPlayer(pl)));
+                p.Message(players.Join(FormatPlayer));
             }
             else
             {
@@ -189,7 +141,7 @@ namespace MCGalaxy.Games
                 if (p.level != Map && !PlayerActions.ChangeMap(p, "spleef")) return;
                 Players.Add(p);
                 p.Message("You've joined spleef!");
-                Chat.MessageFrom(p, "λNICK &Sjoined spleef!");
+                Chat.MessageFromLevel(p, "λNICK &Sjoined spleef!");
             }
             else
             {
@@ -201,6 +153,39 @@ namespace MCGalaxy.Games
         {
             Players.Remove(p);
             OnPlayerDied(p);
+        }
+
+        protected override void HookEventHandlers()
+        {
+            base.HookEventHandlers();
+
+            OnPlayerSpawningEvent.Register(HandlePlayerSpawning, Priority.High);
+            OnBlockChangingEvent.Register(HandleBlockChanged, Priority.High);
+        }
+
+        protected override void UnhookEventHandlers()
+        {
+            base.UnhookEventHandlers();
+
+            OnPlayerSpawningEvent.Unregister(HandlePlayerSpawning);
+            OnBlockChangingEvent.Unregister(HandleBlockChanged);
+        }
+
+        void HandlePlayerSpawning(Player p, ref Position pos, ref byte yaw, ref byte pitch, bool respawning)
+        {
+            if (!respawning || !Remaining.Contains(p)) return;
+            Chat.MessageFromLevel(p, "λNICK &Sis out of spleef!");
+            OnPlayerDied(p);
+        }
+
+        void HandleBlockChanged(Player p, ushort x, ushort y, ushort z, BlockID block, bool placing, ref bool cancel)
+        {
+            if (Running && !Remaining.Contains(p) && Map == p.level)
+            {
+                p.Message("You are out of the round, and cannot break blocks.");
+                p.RevertBlock(x, y, z);
+                cancel = true;
+            }
         }
 
         protected override string FormatStatus1(Player p)
@@ -233,7 +218,7 @@ namespace MCGalaxy.Games
 
             RoundInProgress = true;
             UpdateAllStatus();
-            RunRound();
+            while (RoundInProgress && Running && Remaining.Count > 0);
         }
 
         protected override void ContinueOnSameMap()
@@ -261,11 +246,6 @@ namespace MCGalaxy.Games
             Player[] players = Players.Items;
             Remaining.Clear();
             foreach (Player pl in players) { Remaining.Add(pl); }
-        }
-
-        void RunRound()
-        {
-            while (RoundInProgress && Running && Remaining.Count > 0) ;
         }
 
         void ResetBoard()
@@ -323,12 +303,14 @@ namespace MCGalaxy.Games
             switch (players.Length)
             {
                 case 1:
-                    Map.Message(players[0].ColoredName + " &Sis the winner!");
+                    Chat.MessageFromLevel(players[0], "λNICK &Sis the winner!");
                     EndRound(players[0]);
                     break;
                 case 2:
                     Map.Message("Only 2 Players left:");
-                    Map.Message(players[0].ColoredName + " &Sand " + players[1].ColoredName);
+                    Player[] plrs = Players.Items;
+                    foreach (Player pl in plrs)
+                        pl.Message("{0} &Sand {1}", pl.FormatNick(players[0]), pl.FormatNick(players[1]));
                     break;
                 default:
                     Map.Message(players.Length + " players left!");
@@ -348,10 +330,17 @@ namespace MCGalaxy.Games
 
             if (winner != null)
             {
-                winner.SendCpeMessage(CpeMessageType.BigAnnouncement, "&SYou win!");
-                winner.SendCpeMessage(CpeMessageType.SmallAnnouncement, "&T+30 &S" + Server.Config.Currency + "!");
                 winner.SetMoney(winner.money + 30);
                 winner.Message("Congratulations, you won this round of spleef!");
+                if (winner.Supports(CpeExt.MessageTypes))
+                {
+                    winner.SendCpeMessage(CpeMessageType.BigAnnouncement, "&SYou win!");
+                    winner.SendCpeMessage(CpeMessageType.SmallAnnouncement, string.Format("&a+{0} &S{1}!", Config.MoneyAward, Server.Config.Currency));
+                }
+                else
+                {
+                    winner.Message("&a+{0} &S{1}!", Config.MoneyAward, Server.Config.Currency);
+                }
                 PlayerActions.Respawn(winner);
             }
             else
@@ -446,7 +435,9 @@ namespace MCGalaxy.Games
             }
             else
             {
+                Console.WriteLine("HERE WE GO!");
                 base.Use(p, message, data);
+                Console.WriteLine("AND WE ARE FUCKING DONE!");
             }
         }
 
@@ -464,12 +455,6 @@ namespace MCGalaxy.Games
                 }
                 game.PlayerJoinedGame(p);
             }
-        }
-
-        static string FormatPlayer(Player pl, SpleefGame game)
-        {
-            string suffix = game.Remaining.Contains(pl) ? " &a[IN]" : " &c[OUT]";
-            return pl.ColoredName + suffix;
         }
 
         protected override void HandleSet(Player p, RoundsGame game_, string[] args)
@@ -491,17 +476,18 @@ namespace MCGalaxy.Games
         {
             if (game_.Running) { p.Message("{0} is already running", game_.GameName); return; }
 
-            SpleefGame game = (SpleefGame)game_;
-            game.Start(p, "spleef", int.MaxValue);
+            string map = args.Length > 1 ? args[1] : "spleef";
+            game_.Start(p, map, int.MaxValue);
         }
 
         public override void Help(Player p)
         {
             p.Message("&T/Spl set [width] [height] [length]");
             p.Message("&HRe-generates the spleef map (default is 32x32x32)");
-            p.Message("&T/Spl start &H- Starts Spleef");
+            p.Message("&T/Spl start <map> &H- Starts Spleef");
             p.Message("&T/Spl stop &H- Stops Spleef");
             p.Message("&T/Spl end &H- Ends current round of Spleef");
+            p.Message("&T/Spl add/remove &H- Adds/removes current map from map list");
             p.Message("&T/Spl join &H- joins the game");
             p.Message("&T/Spl status &H- lists players currently playing");
         }
