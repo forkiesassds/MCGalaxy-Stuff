@@ -435,9 +435,7 @@ namespace MCGalaxy.Games
             }
             else
             {
-                Console.WriteLine("HERE WE GO!");
                 base.Use(p, message, data);
-                Console.WriteLine("AND WE ARE FUCKING DONE!");
             }
         }
 
