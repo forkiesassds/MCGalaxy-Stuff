@@ -6,7 +6,7 @@ Command for deciding on things, originally came from The Build, but this version
 ## Greentext.cs
 Plugin to make text green if the message starts with ">", originally came from The Build.
 ## nasgen.cs
-Edited version of NasGen, made for the ClassicalNuts server.
+Edited version of NasGen, made for the Omniarchive Classic (originally known as ClassicalNuts) server.
 ## 8ball2.cs
 A NA2 like version of /8ball
 ## spleef.cs
