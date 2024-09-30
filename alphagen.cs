@@ -1743,16 +1743,7 @@ namespace VeryPlugins
         }
     }
 
-    [StructLayout(LayoutKind.Explicit)]
-    public struct FloatIntConverter
-    {
-        [FieldOffset(0)]
-        public int IntValue;
-        [FieldOffset(0)]
-        public float FloatValue;
-    }
-
-    public static class MathHelper
+    public unsafe static class MathHelper
     {
         private static int[] SINE_TABLE_INT = new int[16384 + 1];
         private static float SINE_TABLE_MIDPOINT;
@@ -1760,11 +1751,11 @@ namespace VeryPlugins
         static MathHelper()
         {
             // Copy the sine table, covering to raw int bits
-            FloatIntConverter converter = new FloatIntConverter();
+            float val = 0;
             for (int i = 0; i < SINE_TABLE_INT.Length; i++)
             {
-                converter.FloatValue = (float)Math.Sin(i * Math.PI * 2.0D / 65536.0D);
-                SINE_TABLE_INT[i] = converter.IntValue;
+                val = (float)Math.Sin(i * Math.PI * 2.0D / 65536.0D);
+                SINE_TABLE_INT[i] = *(int*)&val;
             }
 
             SINE_TABLE_MIDPOINT = 1.2246469E-16F;
@@ -1782,7 +1773,6 @@ namespace VeryPlugins
 
         private static float lookup(int index)
         {
-            // A special case... Is there some way to eliminate this?
             if (index == 32768)
             {
                 return SINE_TABLE_MIDPOINT;
@@ -1806,10 +1796,8 @@ namespace VeryPlugins
 
             // Fetch the corresponding value from the LUT and invert the sign bit as needed
             // This directly manipulate the sign bit on the float bits to simplify logic
-            FloatIntConverter converter = new FloatIntConverter();
-            converter.IntValue = SINE_TABLE_INT[pos] ^ neg;
-
-            return converter.FloatValue;
+            int val = SINE_TABLE_INT[pos] ^ neg;
+            return *(float*)&val;
         }
 
         public static int floor(double num)
