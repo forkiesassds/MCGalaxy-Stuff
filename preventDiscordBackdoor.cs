@@ -25,23 +25,20 @@ namespace VeryPlugins
             OnGatewayEventReceivedEvent.Unregister(HandleDiscordGatewayEvent);
         }
 
-        void HandleDiscordGatewayEvent(DiscordBot bot, string eventName, JsonObject data)
+        static void HandleDiscordGatewayEvent(DiscordBot bot, string eventName, JsonObject data)
         {
             if (eventName != "GUILD_BAN_ADD") return;
 
-            if (data["user"] is JsonObject user)
-            {
-                string username = (string)user["username"];
-                string discriminator = (string)user["discriminator"];
-                string id = (string)user["id"];
+            if (!(data["user"] is JsonObject user)) return;
+            string username = (string)user["username"];
+            string discriminator = (string)user["discriminator"];
+            string id = (string)user["id"];
 
-                if (DiscordPlugin.Bot.Controllers.Remove(id))
-                {
-                    DiscordPlugin.Bot.Controllers.Save();
-                    Logger.Log(LogType.SystemActivity, "Removed banned user {0} (ID: {1}) from discordcontrollers", username + 
-                            (discriminator == "0" ? "" : "#" + discriminator), id);
-                }
-            }
+            if (!DiscordPlugin.Bot.Controllers.Remove(id)) return;
+                
+            DiscordPlugin.Bot.Controllers.Save();
+            Logger.Log(LogType.SystemActivity, "Removed banned user {0} (ID: {1}) from discordcontrollers", username + 
+                       (discriminator == "0" ? "" : "#" + discriminator), id);
         }
     }
 }

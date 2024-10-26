@@ -16,7 +16,7 @@ namespace VeryPlugins
         public override string creator => "icanttellyou";
         public override string MCGalaxy_Version => "1.9.4.9";
 
-        private List<string> warnCmds;
+        List<string> warnCmds;
 
         public override void Load(bool auto)
         {
@@ -41,11 +41,10 @@ namespace VeryPlugins
 
         void HandlePlayerCommand(Player p, string cmd, string args, CommandData data)
         {
-            if (warnCmds != null && warnCmds.CaselessContains(cmd))
-            {
-                string msg = "To Ops: " + p.name + " &Sused /" + cmd + " " + args;
-                Chat.Message(ChatScope.Perms, msg, Chat.OpchatPerms, null, true);
-            }
+            if (warnCmds == null || !warnCmds.CaselessContains(cmd)) return;
+            
+            string msg = "To Ops: " + p.name + " &Sused /" + cmd + " " + args;
+            Chat.Message(ChatScope.Perms, msg, Chat.OpchatPerms, null, true);
         }
     }
 }

@@ -20,7 +20,7 @@ namespace VeryPlugins
             OnPlayerChatEvent.Unregister(HandleChat);
         }
 
-        private void HandleChat(Player source, string msg)
+        static void HandleChat(Player source, string msg)
         {
 
             if (msg.CaselessEq("y") || msg.CaselessEq("yes") || 

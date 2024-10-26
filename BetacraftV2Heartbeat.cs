@@ -34,7 +34,7 @@ namespace VeryPlugins
             Heartbeat.Heartbeats.RemoveAll(h => h is BetacraftV2Heartbeat);
         }
 
-        HeartbeatConfig bcv2Config = new HeartbeatConfig();
+        readonly HeartbeatConfig bcv2Config = new HeartbeatConfig();
         void OnConfigUpdated()
         {
             if (!Directory.Exists(CONFIG_FOLDER)) Directory.CreateDirectory(CONFIG_FOLDER);
@@ -47,15 +47,14 @@ namespace VeryPlugins
             mojangService.NameSuffix = bcv2Config.NameSuffix;
             mojangService.SkinPrefix = bcv2Config.SkinPrefix;
 
-            if (!Heartbeat.Heartbeats.Any(h => h is BetacraftV2Heartbeat) && Server.Config.Public)
-            {
-                Heartbeat bcv2Beat = new BetacraftV2Heartbeat(bcv2Config);
-                Heartbeat.Register(bcv2Beat);
-            }
+            if (Heartbeat.Heartbeats.Any(h => h is BetacraftV2Heartbeat) || !Server.Config.Public) return;
+            
+            Heartbeat bcv2Beat = new BetacraftV2Heartbeat(bcv2Config);
+            Heartbeat.Register(bcv2Beat);
         }
     }
 
-    public class PlayerUtils
+    public static class PlayerUtils
     {
         public static JsonArray FilterOnlyCanSee(LevelPermission plRank, IEnumerable<Player> players)
         {
@@ -72,7 +71,7 @@ namespace VeryPlugins
 
     public class BetacraftV2Heartbeat : Heartbeat
     {
-        public HeartbeatConfig config;
+        readonly HeartbeatConfig config;
 
         public BetacraftV2Heartbeat(HeartbeatConfig conf)
         {
@@ -162,15 +161,12 @@ namespace VeryPlugins
         protected override void OnResponse(WebResponse response)
         {
             string text = HttpUtil.GetResponseText(response);
-
             JsonObject responseJson = (JsonObject)new JsonReader(text).Parse();
 
-            if (responseJson.ContainsKey("error") && bool.Parse((string)responseJson["error"]))
-            {
-                string message = (string)responseJson["message"];
+            if (!responseJson.TryGetValue("error", out object value) || !bool.Parse((string)value)) return;
+            string message = (string)responseJson["message"];
 
-                Logger.Log(LogType.Warning, "[BCV2] Error: Server responded with " + message);
-            }
+            Logger.Log(LogType.Warning, "[BCV2] Error: Server responded with " + message);
         }
     }
 
@@ -193,7 +189,7 @@ namespace VeryPlugins
         [ConfigString("connect-address", "Heartbeat authentication", "", true)]
         public string ConnectAddress = "";
 
-        public string Icon = null;
+        public string Icon;
         internal bool fullHeartbeat;
 
         static ConfigElement[] cfg;
@@ -243,7 +239,7 @@ namespace VeryPlugins
             }
         }
 
-        static string externalIP = null;
+        static string externalIP;
         static string GetExternalIP()
         {
             if (externalIP != null) return externalIP;

@@ -15,7 +15,7 @@ namespace VeryPlugins
 
         public override void Load(bool auto)
         {
-            Database.CreateTable("LastPos", new ColumnDesc[]
+            Database.CreateTable("LastPos", new[]
             {
                 new ColumnDesc("Name", ColumnType.Char, 20),
                 new ColumnDesc("Map", ColumnType.VarChar),
@@ -38,7 +38,7 @@ namespace VeryPlugins
             OnPlayerDisconnectEvent.Unregister(HandleOnPlayerDisconnect);
         }
 
-        private void HandleOnPlayerFinishConnecting(Player p)
+        static void HandleOnPlayerFinishConnecting(Player p)
         {
             string map = null;
             Database.ReadRows("LastPos", "Map, X, Y, Z, Yaw, Pitch", record =>
@@ -49,7 +49,7 @@ namespace VeryPlugins
                 p.Extras["LAST_Z"] = record.GetInt("Z");
                 p.Extras["LAST_YAW"] = record.GetInt("Yaw");
                 p.Extras["LAST_PITCH"] = record.GetInt("Pitch");
-            }, "WHERE Name=@0", new string[] { p.name });
+            }, "WHERE Name=@0", p.name);
             if (map == null) { ClearExtraFields(p); return; }
 
             if (!LevelInfo.MapExists(map))
@@ -87,7 +87,7 @@ namespace VeryPlugins
             p.level = lvl;
         }
 
-        private static void ClearExtraFields(Player p)
+        static void ClearExtraFields(Player p)
         {
             p.Extras.Remove("LAST_X");
             p.Extras.Remove("LAST_Y");
@@ -96,24 +96,23 @@ namespace VeryPlugins
             p.Extras.Remove("LAST_PITCH");
         }
 
-        private void HandleOnJoinedLevel(Player p, Level prev, Level lvl, ref bool announce)
+        static void HandleOnJoinedLevel(Player p, Level prev, Level lvl, ref bool announce)
         {
             if (prev != null) return;
 
-            if (p.Extras.Contains("LAST_X") && p.Extras.Contains("LAST_Y") && p.Extras.Contains("LAST_Z") &&
-                p.Extras.Contains("LAST_YAW") && p.Extras.Contains("LAST_PITCH"))
-            {
-                Position newPos = new Position(p.Extras.GetInt("LAST_X"), p.Extras.GetInt("LAST_Y"), p.Extras.GetInt("LAST_Z"));
-                Orientation newOr = new Orientation((byte)p.Extras.GetInt("LAST_YAW"), (byte)p.Extras.GetInt("LAST_PITCH"));
+            if (!p.Extras.Contains("LAST_X") || !p.Extras.Contains("LAST_Y") || !p.Extras.Contains("LAST_Z") ||
+                !p.Extras.Contains("LAST_YAW") || !p.Extras.Contains("LAST_PITCH")) return;
+            
+            Position newPos = new Position(p.Extras.GetInt("LAST_X"), p.Extras.GetInt("LAST_Y"), p.Extras.GetInt("LAST_Z"));
+            Orientation newOr = new Orientation((byte)p.Extras.GetInt("LAST_YAW"), (byte)p.Extras.GetInt("LAST_PITCH"));
 
-                p.SendPosition(newPos, newOr);
-                ClearExtraFields(p);
-            }
+            p.SendPosition(newPos, newOr);
+            ClearExtraFields(p);
         }
 
-        private void HandleOnPlayerDisconnect(Player p, string reason)
+        static void HandleOnPlayerDisconnect(Player p, string reason)
         {
-            object[] args = new object[] { p.level.name, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Rot.RotY, p.Rot.HeadX, p.name };
+            object[] args = { p.level.name, p.Pos.X, p.Pos.Y, p.Pos.Z, p.Rot.RotY, p.Rot.HeadX, p.name };
 
             int changed = Database.UpdateRows("LastPos", "Map=@0, X=@1, Y=@2, Z=@3, Yaw=@4, Pitch=@5", "WHERE Name=@6", args);
 

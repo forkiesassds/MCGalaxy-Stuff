@@ -17,7 +17,7 @@ namespace MCGalaxy.Games
         public override string MCGalaxy_Version { get { return "1.9.5.0"; } }
         public override string name { get { return "Spleef"; } }
 
-        Command cmd = new CmdSpleef();
+        readonly Command cmd = new CmdSpleef();
         public override void Load(bool startup)
         {
             Command.Register(cmd);
@@ -54,7 +54,7 @@ namespace MCGalaxy.Games
         }
     }
 
-    public sealed partial class SpleefGame : RoundsGame
+    public sealed class SpleefGame : RoundsGame
     {
         //game
         public VolatileArray<Player> Players = new VolatileArray<Player>();
@@ -66,10 +66,8 @@ namespace MCGalaxy.Games
 
         protected override string WelcomeMessage { get { return "&dSpleef &Sis running! Type &T/Spl join &Sto join!"; } }
 
-        public int Interval;
-
         public static SpleefGame Instance = new SpleefGame();
-        public SpleefGame()
+        SpleefGame()
         {
             Picker = new SimpleLevelPicker();
         }
@@ -84,16 +82,10 @@ namespace MCGalaxy.Games
         public override void OutputStatus(Player p)
         {
             Player[] players = Players.Items;
+            
             p.Message("Players in spleef:");
-
-            if (RoundInProgress)
-            {
-                p.Message(players.Join(FormatPlayer));
-            }
-            else
-            {
-                p.Message(players.Join(pl => pl.ColoredName));
-            }
+            p.Message(RoundInProgress ? players.Join(FormatPlayer) : 
+                          players.Join(pl => pl.ColoredName));
         }
 
         string FormatPlayer(Player pl)
@@ -193,7 +185,7 @@ namespace MCGalaxy.Games
             return RoundInProgress ? Remaining.Count + " players left" : "";
         }
         //rounds
-        BufferedBlockSender bulk = new BufferedBlockSender();
+        readonly BufferedBlockSender bulk = new BufferedBlockSender();
 
         protected override void DoRound()
         {
@@ -218,7 +210,7 @@ namespace MCGalaxy.Games
 
             RoundInProgress = true;
             UpdateAllStatus();
-            while (RoundInProgress && Running && Remaining.Count > 0);
+            while (RoundInProgress && Running && Remaining.Count > 0) {}
         }
 
         protected override void ContinueOnSameMap()
