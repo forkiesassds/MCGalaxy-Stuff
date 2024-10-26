@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>7</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <OutputPath>..\MCGalaxy\CLI\bin\Debug\net8.0\plugins\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>plugin</RootNamespace>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\MCGalaxy\MCGalaxy\MCGalaxy_dotnet.csproj">
+      <Project>{12597DB0-7C34-4DE1-88EA-9250FF3372EB}</Project>
+      <Name>MCGalaxy_dotnet</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

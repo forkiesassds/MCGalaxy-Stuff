@@ -37,7 +37,7 @@ namespace VeryPlugins
 		    		msg += "%S, &f";
 		    	}
 		    }
-		    Chat.Message(ChatScope.Global, msg, null, (p, arg) => !p.Ignores.EightBall);
+		    Chat.Message(ChatScope.Global, msg, null, (pl, arg) => !pl.Ignores.EightBall);
 
 			DecideState state;
 			state.p = p;
@@ -55,7 +55,7 @@ namespace VeryPlugins
 			Random random = new Random();
 
 			Chat.Message(ChatScope.Global, "The magic ball has decided for " + p.ColoredName + ", choosing &f" + choices[random.Next(0, choices.Length)], 
-							null, (p, arg) => !p.Ignores.EightBall);
+							null, (pl, arg) => !pl.Ignores.EightBall);
 
 		}
 

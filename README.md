@@ -1,6 +1,8 @@
 # MCGalaxy-Stuff
 plugins and commands for the MCGalaxy server software, also includes forked versions of popular plugins and commands.
 
+To easily work with plugins, especially ones in the `proto` directory open up the pluginWorkspace.csproj file in an IDE.
+
 ## CmdDecide.cs
 Command for deciding on things, originally came from The Build, but this version has different wording.
 ## Greentext.cs

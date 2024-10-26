@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using fNbt;
 using MCGalaxy;
 using MCGalaxy.Levels.IO;
