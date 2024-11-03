@@ -11,20 +11,8 @@ namespace VeryPlugins
 {
     public sealed class SchemImporter : IMapImporter
     {
-        public override string Extension
-        {
-            get
-            {
-                return ".schem";
-            }
-        }
-        public override string Description
-        {
-            get
-            {
-                return "Sponge Specification Schematic";
-            }
-        }
+        public override string Extension { get { return ".schem"; } }
+        public override string Description { get { return "Sponge Specification Schematic"; } }
 
         public override Vec3U16 ReadDimensions(Stream src)
         {

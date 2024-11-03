@@ -5,13 +5,7 @@ namespace VeryPlugins
 {
     public class SchemImporterPlugin : Plugin
     {
-        public override string name
-        {
-            get
-            {
-                return "SchemImporterPlugin";
-            }
-        }
+        public override string name { get { return "SchemImporterPlugin"; } }
 
         readonly IMapImporter format = new SchemImporter();
 
