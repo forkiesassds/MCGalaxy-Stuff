@@ -17,9 +17,9 @@ namespace VeryPlugins
     {
         private const string CONFIG_FOLDER = "plugins/bcv2";
 
-        public override string MCGalaxy_Version => "1.9.5.0";
-        public override string name => "BetacraftV2Heartbeat";
-        public override string creator => "icanttellyou";
+        public override string MCGalaxy_Version { get { return "1.9.5.0"; } }
+        public override string name { get { return "BetacraftV2Heartbeat"; } }
+        public override string creator { get { return "icanttellyou"; } }
 
         public override void Load(bool auto)
         {
@@ -163,7 +163,8 @@ namespace VeryPlugins
             string text = HttpUtil.GetResponseText(response);
             JsonObject responseJson = (JsonObject)new JsonReader(text).Parse();
 
-            if (!responseJson.TryGetValue("error", out object value) || !bool.Parse((string)value)) return;
+            object value;
+            if (!responseJson.TryGetValue("error", out value) || !bool.Parse((string)value)) return;
             string message = (string)responseJson["message"];
 
             Logger.Log(LogType.Warning, "[BCV2] Error: Server responded with " + message);

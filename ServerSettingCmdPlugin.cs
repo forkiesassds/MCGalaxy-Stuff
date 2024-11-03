@@ -7,9 +7,9 @@ namespace VeryPlugins
 {
     public class ServerSettingCmdPlugin : Plugin
     {
-        public override string name => "ServerSettingCmdPlugin";
-        public override string creator => "icanttellyou";
-        public override string MCGalaxy_Version => "1.9.4.9";
+        public override string name { get { return "ServerSettingCmdPlugin"; } }
+        public override string creator { get { return "icanttellyou"; } }
+        public override string MCGalaxy_Version { get { return "1.9.4.9"; } }
 
         internal Command css = new CmdChangeServerSetting();
         internal Command vss = new CmdViewServerSettings();
@@ -35,10 +35,10 @@ namespace VeryPlugins
 
     public class CmdChangeServerSetting : Command2
     {
-        public override string name => "ChangeServerSetting";
-        public override string type => CommandTypes.Other;
-        public override string shortcut => "css";
-        public override LevelPermission defaultRank => LevelPermission.Owner;
+        public override string name { get { return "ChangeServerSetting"; } }
+        public override string type { get { return CommandTypes.Other; } }
+        public override string shortcut { get { return "css"; } }
+        public override LevelPermission defaultRank { get { return LevelPermission.Owner; } }
 
         public override void Use(Player p, string message)
         {
@@ -77,10 +77,10 @@ namespace VeryPlugins
 
     public class CmdViewServerSettings : Command2
     {
-        public override string name => "ViewServerSettings";
-        public override string type => CommandTypes.Other;
-        public override string shortcut => "vss";
-        public override LevelPermission defaultRank => LevelPermission.Owner;
+        public override string name { get { return "ViewServerSettings"; } }
+        public override string type { get { return CommandTypes.Other; } }
+        public override string shortcut { get { return "vss"; } }
+        public override LevelPermission defaultRank { get { return LevelPermission.Owner; } }
 
         public override void Use(Player p, string message)
         {

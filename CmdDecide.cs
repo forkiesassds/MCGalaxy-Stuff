@@ -7,9 +7,9 @@ namespace VeryPlugins
 {
 	public class CmdDecide : Command
 	{
-		public override string name => "Decide";
-		public override string type => CommandTypes.Chat;
-		public override LevelPermission defaultRank => LevelPermission.Guest;
+		public override string name { get { return "Decide"; } }
+		public override string type { get { return CommandTypes.Chat; } }
+		public override LevelPermission defaultRank { get { return LevelPermission.Guest; } }
 
 		static readonly TimeSpan delay = TimeSpan.FromSeconds(2);
 

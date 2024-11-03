@@ -11,9 +11,9 @@ namespace VeryPlugins
 {
     public class PreventDiscordBackdoorPlugin : Plugin
     {
-        public override string name => "preventDiscordBackdoor";
-        public override string creator => "icanttellyou";
-        public override string MCGalaxy_Version => "1.9.4.9"; //todo: change to 1.9.5.0 once that is actually out
+        public override string name { get { return "preventDiscordBackdoor"; } }
+        public override string creator { get { return "icanttellyou"; } }
+        public override string MCGalaxy_Version { get { return "1.9.5.0"; } }
 
         public override void Load(bool auto)
         {
@@ -29,7 +29,8 @@ namespace VeryPlugins
         {
             if (eventName != "GUILD_BAN_ADD") return;
 
-            if (!(data["user"] is JsonObject user)) return;
+            if (!(data["user"] is JsonObject)) return;
+            JsonObject user = (JsonObject)data["user"];
             string username = (string)user["username"];
             string discriminator = (string)user["discriminator"];
             string id = (string)user["id"];

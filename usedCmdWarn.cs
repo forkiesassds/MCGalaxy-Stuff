@@ -12,9 +12,9 @@ namespace VeryPlugins
     {
         private const string WARN_CMD_PATH = "plugins/warncmds.txt";
 
-        public override string name => "usedCmdWarn";
-        public override string creator => "icanttellyou";
-        public override string MCGalaxy_Version => "1.9.4.9";
+        public override string name { get { return "usedCmdWarn"; } }
+        public override string creator { get { return "icanttellyou"; } }
+        public override string MCGalaxy_Version { get { return "1.9.4.9"; } }
 
         List<string> warnCmds;
 

@@ -6,9 +6,9 @@ namespace VeryPlugins
 {
     public class MessageConsent : Plugin
     {
-        public override string name => "MessageConsent";
-        public override string creator => "icanttellyou";
-        public override string MCGalaxy_Version => "1.9.4.9";
+        public override string name { get { return "MessageConsent"; } }
+        public override string creator { get { return "icanttellyou"; } }
+        public override string MCGalaxy_Version { get { return "1.9.4.9"; } }
 
         public override void Load(bool auto)
         {

@@ -11,8 +11,20 @@ namespace VeryPlugins
 {
     public sealed class SchemImporter : IMapImporter
     {
-        public override string Extension => ".schem";
-        public override string Description => "Sponge Specification Schematic";
+        public override string Extension
+        {
+            get
+            {
+                return ".schem";
+            }
+        }
+        public override string Description
+        {
+            get
+            {
+                return "Sponge Specification Schematic";
+            }
+        }
 
         public override Vec3U16 ReadDimensions(Stream src)
         {
@@ -75,7 +87,7 @@ namespace VeryPlugins
                 else
                 {
                     //TODO: make this make new blockdefs if option is enabled.
-                    Console.WriteLine($"detected unknown blockstate {state}... replacing with bedrock");
+                    Console.WriteLine("detected unknown blockstate " + state + "... replacing with bedrock");
                     palette[index] = 7;
                 }
             }

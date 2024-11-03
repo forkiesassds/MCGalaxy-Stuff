@@ -1711,7 +1711,7 @@ namespace VeryPlugins
         public int NextInt(int n)
         {
             if (n <= 0)
-                throw new ArgumentOutOfRangeException(nameof(n), "must be positive");
+                throw new ArgumentOutOfRangeException("n", "must be positive");
 
             if ((n & -n) == n) // i.e., n is a power of 2
                 return (int)((n * (long)Next(31)) >> 31);
