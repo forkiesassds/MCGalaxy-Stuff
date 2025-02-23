@@ -53,10 +53,7 @@ namespace VeryPlugins
                 if (cmdParts.Length > 1)
                     cmdArgs = cmdParts[1];
                 
-                Console.WriteLine(cmdName + " " + cmdArgs);
                 Search(ref cmdName, ref cmdArgs);
-                Console.WriteLine(cmdName + " " + cmdArgs);
-            
                 Command cmd = Find(cmdName);
                 if (cmd == null)
                 {
@@ -125,11 +122,9 @@ namespace VeryPlugins
         
         Vec3U16 Clamp(Level lvl, Vec3S32 pos) 
         {
-            Vec3S32 clip = new Vec3S32(lvl.Width - 1, lvl.Height - 1, lvl.Length - 1);
-            
-            pos.X = Math.Max(0, Math.Min(pos.X, clip.X));
-            pos.Y = Math.Max(0, Math.Min(pos.Y, clip.Y));
-            pos.Z = Math.Max(0, Math.Min(pos.Z, clip.Z));
+            pos.X = Math.Max(0, Math.Min(pos.X, lvl.Width - 1));
+            pos.Y = Math.Max(0, Math.Min(pos.Y, lvl.Height - 1));
+            pos.Z = Math.Max(0, Math.Min(pos.Z, lvl.Length - 1));
             return new Vec3U16((ushort)pos.X, (ushort)pos.Y, (ushort)pos.Z);
         }
 
