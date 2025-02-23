@@ -106,7 +106,7 @@ namespace VeryPlugins
         {
             p.Message("&T/ForEach [block] [commands]");
             p.Message("&HRuns a command on every block within selection");
-            p.Message("&HUse | to seperate commands within the command chain");
+            p.Message("&HUse | to separate commands within the command chain");
             p.Message("&HUse ~ to substitute coordinates within a command.");
         }
 
