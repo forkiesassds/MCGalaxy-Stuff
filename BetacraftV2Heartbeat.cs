@@ -17,7 +17,7 @@ namespace VeryPlugins
     {
         private const string CONFIG_FOLDER = "plugins/bcv2";
 
-        public override string MCGalaxy_Version { get { return "1.9.5.0"; } }
+        public override string MCGalaxy_Version { get { return "1.9.5.1"; } }
         public override string name { get { return "BetacraftV2Heartbeat"; } }
         public override string creator { get { return "icanttellyou"; } }
 
@@ -217,7 +217,7 @@ namespace VeryPlugins
         public void Save(string path)
         {
             if (cfg == null) cfg = ConfigElement.GetAll(typeof(HeartbeatConfig));
-            using (StreamWriter w = new StreamWriter(path + "/heartbeat.properties"))
+            using (StreamWriter w = FileIO.CreateGuarded(path + "/heartbeat.properties"))
             {
                 w.WriteLine("# This file contains settings for configuring the Betacraft V2 heartbeat.");
                 w.WriteLine("# To change server icon simply add icon.png in the same directory as this file.");
