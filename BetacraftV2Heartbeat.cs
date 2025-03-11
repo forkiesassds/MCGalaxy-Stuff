@@ -17,7 +17,7 @@ namespace VeryPlugins
     {
         private const string CONFIG_FOLDER = "plugins/bcv2";
 
-        public override string MCGalaxy_Version { get { return "1.9.5.1"; } }
+        public override string MCGalaxy_Version { get { return "1.9.5.2"; } }
         public override string name { get { return "BetacraftV2Heartbeat"; } }
         public override string creator { get { return "icanttellyou"; } }
 
