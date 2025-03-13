@@ -7,7 +7,6 @@ using MCGalaxy;
 using MCGalaxy.Events.PlayerEvents;
 using MCGalaxy.Events.ServerEvents;
 using MCGalaxy.Network;
-using MCGalaxy.Util;
 using Newtonsoft.Json;
 
 namespace GoodOldLavaSurvival
