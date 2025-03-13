@@ -39,3 +39,29 @@ Plugin that implements Betacraft V2 heartbeat to list to the Betacraft V2 server
 **PLEASE READ [SetupJsonDotNET.md](SetupJsonDotNET.md) TO MAKE SURE THE PLUGIN COMPILES AND WORKS**
 
 Plugin that filters clients that can join the server. Is highly customisable and alerts OPs about players trying to join with prohibited clients.
+Example configuration:
+```json
+{
+  "blacklistedClients": [
+    {
+      "warnMessage": "Cheat/utility clients are against the rules!",
+      "clients": [
+        "Jini",
+        "Samsung Smart Fridge"
+      ]
+    },
+    {
+      "warnMessage": "Please remove the Classic64 plugin to play here.",
+      "clients": [
+        "Classic64 Mario64"
+      ]
+    }
+  ],
+  "requiredCPEExtensions": {
+    "LongerMessages": 1,
+    "NotifyAction": 1
+  },
+  "requireCPE": false,
+  "cpeRequiredMessage": "Please enable enhanced mode in the launcher!"
+}
+```
