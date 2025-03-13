@@ -1,6 +1,7 @@
 //reference Newtonsoft.Json.dll
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using MCGalaxy;
 using MCGalaxy.Events.PlayerEvents;
 using MCGalaxy.Events.ServerEvents;
@@ -112,10 +113,23 @@ namespace GoodOldLavaSurvival
             
             static readonly TextFile filterFile = new TextFile("extra/clientFilter.json", "{}");
 
+            const string FILTER_FILE = "extra/clientFilter.json";
+
             protected internal void Load()
             {
-                filterFile.EnsureExists();
-                JsonConvert.PopulateObject(filterFile.GetText().Join("\n"), this, jsonSettings);
+                if (!File.Exists(FILTER_FILE))
+                {
+                    Logger.Log(LogType.SystemActivity, FILTER_FILE + " does not exist, creating");
+                    Save();
+                }
+
+                JsonConvert.PopulateObject(File.ReadAllText(FILTER_FILE), this, jsonSettings);
+            }
+
+            protected internal void Save()
+            {
+                string ser = JsonConvert.SerializeObject(this, Formatting.Indented, jsonSettings);
+                File.WriteAllText(FILTER_FILE, ser);
             }
         }
     }
