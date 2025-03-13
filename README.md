@@ -35,3 +35,7 @@ Plugin that makes everyone require to confirm if they should see any message sen
 This plugin makes players login at their last position. This includes the map they were on and precise position and orientation.
 ## BetacraftV2Heartbeat.cs
 Plugin that implements Betacraft V2 heartbeat to list to the Betacraft V2 server list.
+## ClientFilter.cs
+**PLEASE READ [SetupJsonDotNET.md](SetupJsonDotNET.md) TO MAKE SURE THE PLUGIN COMPILES AND WORKS**
+
+Plugin that filters clients that can join the server. Is highly customisable and alerts OPs about players trying to join with prohibited clients.

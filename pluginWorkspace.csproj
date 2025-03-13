@@ -1,14 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <LangVersion>5</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
-    <OutputPath>..\MCGalaxy\CLI\bin\Debug\net8.0\plugins\</OutputPath>
+    <OutputPath>..\MCGalaxy\CLI\bin\Debug\net9.0\plugins\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>plugin</RootNamespace>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   
   <ItemGroup>
@@ -17,5 +18,15 @@
       <Name>MCGalaxy_dotnet</Name>
       <Private>False</Private>
     </ProjectReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+
+    <CopyToServerRoot Include="$(OutDir)\Newtonsoft.Json.dll" />
   </ItemGroup>
+
+  <Target Name="CopyFilesTarget" BeforeTargets="PrepareForRun"
+          Condition="'$(Configuration)' == 'Debug'">
+    <Message Text="Copying file %(CopyToServerRoot.Identity) to server root" Importance="high" />
+    <Copy SourceFiles="%(CopyToServerRoot.Identity)"
+          DestinationFolder="$(OutDir)\..\%(RecursiveDir)" />
+  </Target>
 </Project>
