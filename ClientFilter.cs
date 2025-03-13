@@ -111,8 +111,6 @@ namespace GoodOldLavaSurvival
             public bool requireCPE;
             [JsonProperty("cpeRequiredMessage")] [DefaultValue("Please enable enhanced mode in the launcher!")]
             public string cpeRequiredMessage = "Please enable enhanced mode in the launcher!";
-            
-            static readonly TextFile filterFile = new TextFile("extra/clientFilter.json", "{}");
 
             const string FILTER_FILE = "extra/clientFilter.json";
 
