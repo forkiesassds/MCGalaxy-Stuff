@@ -85,6 +85,13 @@ namespace VeryPlugins
                     for (ushort x = p1.X; x <= p2.X; x++)
                         if (lvl.GetBlock(x, y, z) == args.block)
                             foreach (Tuple<Command, string> cmd in args.commandChain)
+                            {
+                                if (p.level != lvl)
+                                {
+                                    p.Message("&WSwitched levels, aborting ForEach!");
+                                    return true;
+                                }
+                                
                                 try
                                 {
                                     string cmdArgs = cmd.Item2;
@@ -98,7 +105,8 @@ namespace VeryPlugins
                                 {
                                     return false;
                                 }
-            
+                            }
+
             return true;
         }
 
