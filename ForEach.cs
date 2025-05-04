@@ -29,6 +29,7 @@ namespace VeryPlugins
     {
         public override string name { get { return "ForEach"; } }
         public override string type { get { return CommandTypes.Building; } }
+        public override LevelPermission defaultRank { get { return LevelPermission.AdvBuilder; } }
 
         public override void Use(Player p, string message, CommandData data)
         {
