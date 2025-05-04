@@ -65,3 +65,8 @@ Example configuration:
   "cpeRequiredMessage": "Please enable enhanced mode in the launcher!"
 }
 ```
+## XAlts.cs
+Recreation of 123DMWM's BetterAlts plugin, originally created for Good old Lava Survival.
+
+NOTE: This does NOT import data from existing logs, however you can make a .sql file to import using `/server import xalts`
+with using the [xaltsconv.py](util/xaltsconv.py) script (You need Python 3 to use it).

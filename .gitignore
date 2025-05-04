@@ -4,3 +4,4 @@ obj
 !*.cs
 !*.md
 !pluginWorkspace.csproj
+!*.py
