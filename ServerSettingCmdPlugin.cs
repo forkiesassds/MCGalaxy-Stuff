@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using MCGalaxy;
 
 namespace VeryPlugins
@@ -33,6 +34,62 @@ namespace VeryPlugins
         }
     }
 
+    public struct TempLogger
+    {
+        readonly List<Tuple<LogType, string>> lines;
+        readonly Thread checkThread;
+        
+        public bool Logged { get { return lines.Count > 0; } }
+
+        public TempLogger(Thread checkThread)
+        {
+            this.checkThread = checkThread;
+            lines = new List<Tuple<LogType, string>>();
+        }
+
+        void OnLog(LogType type, string message)
+        {
+            if (Thread.CurrentThread != checkThread) return;
+            lines.Add(new Tuple<LogType, string>(type, message));
+        }
+
+        public void Setup()
+        {
+            Logger.LogHandler += OnLog;
+        }
+
+        public void Cleanup()
+        {
+            Logger.LogHandler -= OnLog;
+        }
+
+        public void DumpLinesToPlayer(Player p)
+        {
+            foreach (Tuple<LogType, string> line in lines)
+            {
+                string prefix;
+
+                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+                switch (line.Item1)
+                {
+                    case LogType.Warning:
+                        prefix = "&e[WARN] ";
+                        break;
+                    case LogType.Error:
+                        prefix = "&W[ERROR] ";
+                        break;
+                    default:
+                        prefix = "";
+                        break;
+                }
+                
+                p.Message(prefix + line.Item2);
+            }
+            
+            lines.Clear();
+        }
+    }
+
     public class CmdChangeServerSetting : Command2
     {
         public override string name { get { return "ChangeServerSetting"; } }
@@ -53,12 +110,22 @@ namespace VeryPlugins
 
             if (elemI != -1)
             {
+                TempLogger tmp = new TempLogger(Thread.CurrentThread);
+                tmp.Setup();
+                
                 ConfigElement elem = serverConfig[elemI];
                 elem.Field.SetValue(Server.Config, elem.Attrib.Parse(value));
                 SrvProperties.Save();
-
+                
                 p.Message("Changed setting &T{0} &Sto &T{1}", setting, value);
-                p.Message("&WYou may need to check the server logs if the setting changed properly!");
+
+                if (tmp.Logged)
+                {
+                    p.Message("There have been warnings changing the setting, see below messages.");
+                    tmp.DumpLinesToPlayer(p);
+                }
+                
+                tmp.Cleanup();
             }
             else
             {
@@ -70,7 +137,6 @@ namespace VeryPlugins
         {
             p.Message("&T/ChangeServerSetting [setting] [value]");
             p.Message("&HChanges values in server config.");
-            p.Message("&WWarning: &HFeedback on values provided is only output to the logs due to limitations");
             p.Message("&HTo view all server properties use &T/ViewServerSettings");
         }
     }
