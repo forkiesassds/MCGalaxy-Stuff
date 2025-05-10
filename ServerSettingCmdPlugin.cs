@@ -39,12 +39,15 @@ namespace VeryPlugins
         readonly List<Tuple<LogType, string>> lines;
         readonly Thread checkThread;
         
-        public bool Logged { get { return lines.Count > 0; } }
+        bool setup;
+        
+        public bool Logged { get { return setup && lines.Count > 0; } }
 
         public TempLogger(Thread checkThread)
         {
             this.checkThread = checkThread;
             lines = new List<Tuple<LogType, string>>();
+            setup = false;
         }
 
         void OnLog(LogType type, string message)
@@ -53,18 +56,25 @@ namespace VeryPlugins
             lines.Add(new Tuple<LogType, string>(type, message));
         }
 
-        public void Setup()
+        public void Setup(Player p)
         {
+            if (p == Player.Console) return;
+            
+            setup = true;
             Logger.LogHandler += OnLog;
         }
 
         public void Cleanup()
         {
+            if (!setup) return;
+            
             Logger.LogHandler -= OnLog;
         }
 
         public void DumpLinesToPlayer(Player p)
         {
+            if (!setup) return;
+            
             foreach (Tuple<LogType, string> line in lines)
             {
                 string prefix;
@@ -111,7 +121,7 @@ namespace VeryPlugins
             if (elemI != -1)
             {
                 TempLogger tmp = new TempLogger(Thread.CurrentThread);
-                tmp.Setup();
+                tmp.Setup(p);
                 
                 ConfigElement elem = serverConfig[elemI];
                 elem.Field.SetValue(Server.Config, elem.Attrib.Parse(value));
