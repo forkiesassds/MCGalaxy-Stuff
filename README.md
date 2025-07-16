@@ -70,3 +70,5 @@ Recreation of 123DMWM's BetterAlts plugin, originally created for Good old Lava 
 
 NOTE: This does NOT import data from existing logs, however you can make a .sql file to import using `/server import xalts`
 with using the [xaltsconv.py](util/xaltsconv.py) script (You need Python 3 to use it).
+## DiscordLogger.cs
+A plugin that puts console output in a Discord channel that can be easily configured through a config file.
