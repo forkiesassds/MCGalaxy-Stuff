@@ -252,16 +252,30 @@ namespace VeryPlugins
             int totalChunks = width * length;
             int chunksGenerated = 1;
 
+            int percentage = -1;
+
             for (ushort chunkZ = 0; chunkZ < length; chunkZ++)
             {
                 for (ushort chunkX = 0; chunkX < width; chunkX++)
                 {
-                    p.Message(string.Format("Generating chunk {0} out of {1}", chunksGenerated, totalChunks));
+                    p.SendCpeMessage(CpeMessageType.BottomRight1, string.Format("Generating chunk {0} out of {1}", chunksGenerated, totalChunks));
+                    
+                    int curPercentage = (int)((chunksGenerated / (double)totalChunks) * 100);
+                    if (curPercentage > percentage)
+                    {
+                        percentage = curPercentage;
+                        if (curPercentage % 5 == 0)
+                        {
+                            p.Message("Generating level: {0}%", curPercentage);
+                        }
+                    }
+                    
                     world.GetBlock(chunkX << 4, 1, chunkZ << 4);
                     chunksGenerated++;
                 }
             }
 
+            p.SendCpeMessage(CpeMessageType.BottomRight1, "");
             p.Message("Copying chunks to level");
             for (int chunkX = 0; chunkX < width; chunkX++)
             {
