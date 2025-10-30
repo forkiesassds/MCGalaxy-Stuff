@@ -252,6 +252,11 @@ namespace VeryPlugins
         {
             OnResponse(response);
         }
+
+        public override bool CombineWith(DiscordApiMessage prior)
+        {
+            return false;
+        }
     }
     
     public class DiscordApiMessageWaiter : DiscordApiMessage
