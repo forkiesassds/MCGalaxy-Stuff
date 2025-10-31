@@ -279,7 +279,7 @@ namespace VeryPlugins
         
         public override bool CombineWith(DiscordApiMessage prior)
         {
-            return msg.CombineWith(prior); 
+            return false; 
         }
 
         public override void OnRequest(HttpWebRequest req)
