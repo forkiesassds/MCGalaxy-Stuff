@@ -130,40 +130,40 @@ namespace VeryPlugins
         {
             if (!DiscordPlugin.Bot.Connected || DiscordLoggerPlugin.config.LogsChannelID.Length == 0) return;
             
-            lock (logLock)
+            bool flush = false;
+            bool toCreate = false;
+            
+            string dump = "";
+            int remaining = 2000 - ADDITIONAL_LENGTH - curString.Length;
+            while (cache.Count > 0)
             {
-                bool flush = false;
-                bool toCreate = false;
+                flush = true;
+                string line;
                 
-                string dump = "";
-                int remaining = 2000 - ADDITIONAL_LENGTH - curString.Length;
-                while (cache.Count > 0)
-                {
-                    flush = true;
-                    string line = cache.Dequeue();
+                lock (logLock)
+                    line = cache.Dequeue();
 
-                    if (remaining - line.Length - 1 < 0)
-                    {
-                        AppendOrCreateMessage(dump);
-                        dump = "";
-                        remaining = 2000 - ADDITIONAL_LENGTH;
-                        
-                        if (toCreate)
-                            CreateMessage(line + "\n");
-                        
-                        toCreate = true;
-                        flush = false;
-                    }
+                if (remaining - line.Length - 1 < 0)
+                {
+                    AppendOrCreateMessage(dump);
+                    dump = "";
+                    remaining = 2000 - ADDITIONAL_LENGTH;
                     
-                    dump += line + "\n";
-                    remaining -= line.Length + 1;
+                    if (toCreate)
+                        CreateMessage(line + "\n");
+                    
+                    toCreate = true;
+                    flush = false;
                 }
                 
-                if (flush && !toCreate)
-                    AppendOrCreateMessage(dump);
-                else if (toCreate)
-                    CreateMessage(dump);
+                dump += line + "\n";
+                remaining -= line.Length + 1;
             }
+            
+            if (flush && !toCreate)
+                AppendOrCreateMessage(dump);
+            else if (toCreate)
+                CreateMessage(dump);
         }
 
         static void FlushPayloads(SchedulerTask task)
