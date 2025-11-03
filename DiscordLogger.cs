@@ -7,7 +7,6 @@ using MCGalaxy;
 using MCGalaxy.Config;
 using MCGalaxy.Events.ServerEvents;
 using MCGalaxy.Modules.Relay.Discord;
-using MCGalaxy.Tasks;
 
 namespace VeryPlugins
 {
@@ -23,8 +22,6 @@ namespace VeryPlugins
         {
             OnConfigUpdatedEvent.Register(OnConfigUpdated, Priority.Low);
             OnConfigUpdated();
-            
-            DiscordLogger.Init();
         }
         
         public override void Unload(bool auto)
@@ -38,6 +35,7 @@ namespace VeryPlugins
             if (!File.Exists("plugins/discordlogger.properties")) config.Save("plugins");
 
             config.Load("plugins");
+            DiscordLogger.Init();
         }
     }
     
@@ -76,37 +74,31 @@ namespace VeryPlugins
     public class DiscordLogger
     {
         const int ADDITIONAL_LENGTH = 4 * 2;
-
-        static bool flushingPayloads;
-        static bool disposed;
+        
+        static bool disposed = true;
         static string curString = "";
         static string lastMessageID = "";
         
         static readonly object logLock = new object();
         static Queue<string> cache = new Queue<string>();
         static Queue<DiscordApiMessage> payloads = new Queue<DiscordApiMessage>();
-        static SchedulerTask logTask;
-        static SchedulerTask payloadTask;
         
         public static void Init() 
         {
-            if (!DiscordPlugin.Bot.Enabled)
+            if (!DiscordPlugin.Bot.Enabled || !disposed)
                 return;
-            
+
+            disposed = false;
             Logger.LogHandler += LogMessage;
             
-            logTask = Server.MainScheduler.QueueRepeat(Flush, null,
-                                                       TimeSpan.FromMilliseconds(DiscordLoggerPlugin.config.FlushDelay));
-            payloadTask = Server.MainScheduler.QueueRepeat(FlushPayloads, null,
-                                                       TimeSpan.FromMilliseconds(DiscordLoggerPlugin.config.PayloadDelay));
+            new Thread(Flush).Start();
+            new Thread(FlushPayloads).Start();
         }
         
         public static void Dispose() 
         {
             if (disposed) return;
             disposed = true;
-            Server.MainScheduler.Cancel(logTask);
-            Server.MainScheduler.Cancel(payloadTask);
             
             lock (logLock) 
                 cache.Clear();
@@ -126,64 +118,68 @@ namespace VeryPlugins
             lock (logLock) cache.Enqueue(now + Colors.Strip(message));
         }
         
-        static void Flush(SchedulerTask task)
+        static void Flush()
         {
             if (!DiscordPlugin.Bot.Connected || DiscordLoggerPlugin.config.LogsChannelID.Length == 0) return;
-            
-            bool flush = false;
-            bool toCreate = false;
-            
-            string dump = "";
-            int remaining = 2000 - ADDITIONAL_LENGTH - curString.Length;
-            while (cache.Count > 0)
-            {
-                flush = true;
-                string line;
-                
-                lock (logLock)
-                    line = cache.Dequeue();
 
-                if (remaining - line.Length - 1 < 0)
+            while (!disposed)
+            {
+                bool flush = false;
+                bool toCreate = false;
+
+                string dump = "";
+                int remaining = 2000 - ADDITIONAL_LENGTH - curString.Length;
+                while (cache.Count > 0)
                 {
-                    AppendOrCreateMessage(dump);
-                    dump = "";
-                    remaining = 2000 - ADDITIONAL_LENGTH;
-                    
-                    if (toCreate)
-                        CreateMessage(line + "\n");
-                    
-                    toCreate = true;
-                    flush = false;
+                    flush = true;
+                    string line;
+
+                    lock (logLock)
+                        line = cache.Dequeue();
+
+                    if (remaining - line.Length - 1 < 0)
+                    {
+                        AppendOrCreateMessage(dump);
+                        dump = "";
+                        remaining = 2000 - ADDITIONAL_LENGTH;
+
+                        if (toCreate)
+                            CreateMessage(line + "\n");
+
+                        toCreate = true;
+                        flush = false;
+                    }
+
+                    dump += line + "\n";
+                    remaining -= line.Length + 1;
                 }
+
+                if (flush && !toCreate)
+                    AppendOrCreateMessage(dump);
+                else if (toCreate)
+                    CreateMessage(dump);
                 
-                dump += line + "\n";
-                remaining -= line.Length + 1;
+                Thread.Sleep(DiscordLoggerPlugin.config.FlushDelay);
             }
-            
-            if (flush && !toCreate)
-                AppendOrCreateMessage(dump);
-            else if (toCreate)
-                CreateMessage(dump);
         }
 
-        static void FlushPayloads(SchedulerTask task)
+        static void FlushPayloads()
         {
-            if (flushingPayloads)
-                return;
-            
-            flushingPayloads = true;
-            while (payloads.Count > 0)
+            while (!disposed)
             {
-                DiscordApiMessageWaiter msg = new DiscordApiMessageWaiter(payloads.Dequeue());
-                DiscordPlugin.Bot.Send(msg);
-                
-                while (!msg.isReady)
-                    Thread.Sleep(1);
+                while (payloads.Count > 0)
+                {
+                    DiscordApiMessageWaiter msg = new DiscordApiMessageWaiter(payloads.Dequeue());
+                    DiscordPlugin.Bot.Send(msg);
+
+                    while (!msg.isReady)
+                        Thread.Sleep(1);
+
+                    Thread.Sleep(DiscordLoggerPlugin.config.PayloadDelay);
+                }
                 
                 Thread.Sleep(DiscordLoggerPlugin.config.PayloadDelay);
             }
-            
-            flushingPayloads = false;
         }
 
         static void AppendOrCreateMessage(string message)
