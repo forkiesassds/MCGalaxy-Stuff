@@ -167,13 +167,41 @@ namespace VeryPlugins
         {
             while (!disposed)
             {
+                long expectedDelay = DiscordLoggerPlugin.config.PayloadDelay + 2500;
+                
                 while (payloads.Count > 0)
                 {
                     DiscordApiMessageWaiter msg = new DiscordApiMessageWaiter(payloads.Dequeue());
+                    
                     DiscordPlugin.Bot.Send(msg);
-
+                    
+                    DateTime payloadSentAt = DateTime.Now;
+                    int tries = 1;
+                    
                     while (!msg.isReady)
+                    {
+                        TimeSpan timeDifference = DateTime.Now - payloadSentAt;
+
+                        if (timeDifference.Milliseconds > expectedDelay)
+                        {
+                            if (tries > 3)
+                            {
+                                Logger.Log(LogType.Warning, "[DiscordLogger] Payload is not marked as after {0} and 3 tries have been attempted. Skipping payload.", 
+                                           timeDifference.Shorten(true));
+                                break;
+                            }
+                            
+                            Logger.Log(LogType.Warning, "[DiscordLogger] Payload is not marked as ready after {0}, retrying.", 
+                                       timeDifference.Shorten(true));
+
+                            payloadSentAt = DateTime.Now;
+                            tries++;
+                            DiscordPlugin.Bot.Send(msg);
+                        }
+                        
                         Thread.Sleep(1);
+                    }
+                    
 
                     Thread.Sleep(DiscordLoggerPlugin.config.PayloadDelay);
                 }
