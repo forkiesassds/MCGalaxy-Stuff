@@ -45,8 +45,6 @@ namespace VeryPlugins
         public string LogsChannelID = "";
         [ConfigInt("flush-delay", "Logging", 2000)]
         public int FlushDelay = 2000;
-        [ConfigInt("payload-delay", "Logging", 500)]
-        public int PayloadDelay = 500;
 
         static ConfigElement[] cfg;
         public void Load(string path)
@@ -63,7 +61,6 @@ namespace VeryPlugins
                 w.WriteLine("# This file contains settings for configuring the Discord logger plugin.");
                 w.WriteLine("# logs-channel - The ID of the logs channel");
                 w.WriteLine("# flush-delay - How often should lines be flushed");
-                w.WriteLine("# payload-delay - How often should messages be created and edited");
                 w.WriteLine();
 
                 ConfigElement.Serialise(cfg, w, this);
@@ -81,7 +78,6 @@ namespace VeryPlugins
         
         static readonly object logLock = new object();
         static Queue<string> cache = new Queue<string>();
-        static Queue<DiscordApiMessage> payloads = new Queue<DiscordApiMessage>();
         
         public static void Init() 
         {
@@ -92,7 +88,6 @@ namespace VeryPlugins
             Logger.LogHandler += LogMessage;
             
             new Thread(Flush).Start();
-            new Thread(FlushPayloads).Start();
         }
         
         public static void Dispose() 
@@ -163,53 +158,6 @@ namespace VeryPlugins
             }
         }
 
-        static void FlushPayloads()
-        {
-            while (!disposed)
-            {
-                long expectedDelay = DiscordLoggerPlugin.config.PayloadDelay + 2500;
-                
-                while (payloads.Count > 0)
-                {
-                    DiscordApiMessageWaiter msg = new DiscordApiMessageWaiter(payloads.Dequeue());
-                    
-                    DiscordPlugin.Bot.Send(msg);
-                    
-                    DateTime payloadSentAt = DateTime.Now;
-                    int tries = 1;
-                    
-                    while (!msg.isReady)
-                    {
-                        TimeSpan timeDifference = DateTime.Now - payloadSentAt;
-
-                        if (timeDifference.Milliseconds > expectedDelay)
-                        {
-                            if (tries > 3)
-                            {
-                                Logger.Log(LogType.Warning, "[DiscordLogger] Payload is not marked as after {0} and 3 tries have been attempted. Skipping payload.", 
-                                           timeDifference.Shorten(true));
-                                break;
-                            }
-                            
-                            Logger.Log(LogType.Warning, "[DiscordLogger] Payload is not marked as ready after {0}, retrying.", 
-                                       timeDifference.Shorten(true));
-
-                            payloadSentAt = DateTime.Now;
-                            tries++;
-                            DiscordPlugin.Bot.Send(msg);
-                        }
-                        
-                        Thread.Sleep(1);
-                    }
-                    
-
-                    Thread.Sleep(DiscordLoggerPlugin.config.PayloadDelay);
-                }
-                
-                Thread.Sleep(DiscordLoggerPlugin.config.PayloadDelay);
-            }
-        }
-
         static void AppendOrCreateMessage(string message)
         {
             if (lastMessageID.Length == 0)
@@ -220,7 +168,7 @@ namespace VeryPlugins
             
             curString += message;
             DiscordApiMessage msg = new ChannelEditMessage(DiscordLoggerPlugin.config.LogsChannelID, lastMessageID, "```\n" + curString + "\n```");
-            payloads.Enqueue(msg);
+            DiscordPlugin.Bot.Send(msg);
         }
 
         static void CreateMessage(string message)
@@ -235,7 +183,7 @@ namespace VeryPlugins
                 lastMessageID = (string)read["id"];
             });
             
-            payloads.Enqueue(msg);
+            DiscordPlugin.Bot.Send(msg);
         }
     }
     
@@ -280,41 +228,6 @@ namespace VeryPlugins
         public override bool CombineWith(DiscordApiMessage prior)
         {
             return false;
-        }
-    }
-    
-    public class DiscordApiMessageWaiter : DiscordApiMessage
-    {
-        public bool isReady;
-        readonly DiscordApiMessage msg;
-
-        public DiscordApiMessageWaiter(DiscordApiMessage msg)
-        {
-            Path = msg.Path;
-            Method = msg.Method;
-            
-            this.msg = msg;
-        }
-        
-        public override JsonObject ToJson()
-        {
-            return msg.ToJson();
-        }
-        
-        public override bool CombineWith(DiscordApiMessage prior)
-        {
-            return false; 
-        }
-
-        public override void OnRequest(HttpWebRequest req)
-        {
-            msg.OnRequest(req);
-        }
-
-        public override void ProcessResponse(string response)
-        {
-            msg.ProcessResponse(response);
-            isReady = true;
         }
     }
 }
