@@ -561,11 +561,10 @@ namespace VeryPlugins
         JsonObject MakePresence() {
             if (!Presence) return null;
 
-            string expires = DateTime.UtcNow.AddMinutes(10).ToString("o", CultureInfo.InvariantCulture);
             JsonObject activity = new JsonObject()
             {
                 { "text",       GetStatus() },
-                { "expires_at", expires },
+                { "expires_at", null },
                 { "emoji_id",   null },
                 { "emoji_name", null }
             };
