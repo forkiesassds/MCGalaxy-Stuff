@@ -371,7 +371,7 @@ namespace VeryPlugins
                                 lvl.FastGetBlock((ushort)x, (ushort)(y + 1), (ushort)z) == Block.Air)
                             {
                                 int height = r.Next(0, 8);
-                                if (r.Next(0, 50) == 0 && !Tree.TreeCheck(lvl, (ushort)x, (ushort)y, (ushort)z, (short)height) && lvl.IsAirAt((ushort)x, (ushort)(y + 10), (ushort)z))
+                                if (r.Next(0, 50) == 0 && !Tree.TreeCheck(lvl, (ushort)x, (ushort)y, (ushort)z, (short)height, Block.Log) && lvl.IsAirAt((ushort)x, (ushort)(y + 10), (ushort)z))
                                 {
 
                                     double xVal = ((double)x + offsetX) / 200, yVal = (double)y / 130, zVal = ((double)z + offsetZ) / 200;

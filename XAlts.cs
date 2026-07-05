@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using MCGalaxy;
 using MCGalaxy.Commands.Moderation;
@@ -102,7 +103,7 @@ namespace GoodOldLavaSurvival.Moderation
                 object[] args = { i.name, i.ip, i.lastLogin, i.lastLogin };
 
                 string sql = Database.Backend.AddRowSql("LinkedIPs", "Name, IP, FirstSeen, LastSeen", args.Length);
-                trans.Execute(sql, args);
+                trans.Execute(sql, args.Select((arg, idx) => new SqlArgument("@" + idx, arg)).ToArray());
             }
 
             trans.Commit();
