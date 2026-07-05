@@ -109,6 +109,8 @@ namespace VeryPlugins
     public sealed class FluxerPlugin : Plugin 
     {
         public override string name { get { return "FluxerRelay"; } }
+        public override string MCGalaxy_Version { get { return "1.9.5.3"; } }
+        public override string creator { get { return "icanttellyou"; } }
         
         public static FluxerConfig Config = new FluxerConfig();
         public static FluxerBot Bot = new FluxerBot();
