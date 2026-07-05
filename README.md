@@ -21,6 +21,8 @@ A port of Minecraft Alpha's terrain generator.
 Improved version of the rainbow text plugin. The plugin uses color code r for rainbow text.
 ## fancyvoronoigen.cs
 An attempt to improve the Voronoi terrain generator in MCGalaxy to have terrain that doesn't consist of only cliffs
+## FluxerBridge.cs
+A plugin that implements a Fluxer bridge for MCGalaxy. Functions similarly to the Discord bridge built into MCGalaxy.
 ## ForEach.cs
 A command that runs commands for each block within a selection. Inspired by /foreach on NA2.
 ## usedCmdWarn.cs
